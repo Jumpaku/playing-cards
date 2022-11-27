@@ -2,22 +2,12 @@
   "name": "app",
   "version": "1.0.0",
   "description": "Web API for developing games using playing cards",
-  "scripts": {
-    "build": "npm run clean && npm run build:js",
-    "clean": "rm -rf ./dist/*",
-    "build:js": "npm run build:ts:lint && npm run build:js:compile && npm run build:js:bundle",
-    "build:ts:lint": "eslint --fix src/ts/**/*.ts",
-    "build:js:compile": "tsc",
-    "build:js:bundle": "rollup --sourcemap --format umd --file dist/index.bundle.js dist/js/index.js",
-    "start": "node dist/index.bundle.js",
-    "test": "echo 'test not implemented'"
-  },
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Jumpaku/playing-cards.git"
   },
-  "author": "Jumpaku, ",
+  "author": "Jumpaku, chu-ta, ",
   "license": "BSD-2-Clause",
   "bugs": {
     "url": "https://github.com/Jumpaku/playing-cards/issues"
