@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Web API for developing games using playing cards",
   "scripts": {
-    "build": "run-s clean build:js",
+    "build": "npm run clean && npm run build:js",
     "clean": "rm -rf ./dist/*",
-    "build:js": "run-s build:ts:lint build:js:compile build:js:bundle",
+    "build:js": "npm run  build:ts:lint && npm run build:js:compile && npm run build:js:bundle",
     "build:ts:lint": "eslint --fix src/ts/**/*.ts",
     "build:js:compile": "tsc",
     "build:js:bundle": "rollup --sourcemap --format umd --file dist/index.bundle.js dist/js/index.js",
@@ -26,7 +26,9 @@
   "devDependencies": {
     "@types/node": "^18.11.9",
     "@typescript-eslint/eslint-plugin": "^5.44.0",
-    "@typescript-eslint/parser": "^5.44.0",
-    "npm-run-all": "^4.1.5"
+    "@typescript-eslint/parser": "^5.44.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3"
   }
 }
