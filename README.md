@@ -3,7 +3,6 @@
 # 開発環境
 
 - Docker
-- Visual Studio Code
 
 ## ビルド
 
