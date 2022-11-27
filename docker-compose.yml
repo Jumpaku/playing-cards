@@ -8,7 +8,7 @@ services:
     volumes:
       - "./:/app/:delegated"
     ports:
-      - "${SERVER_PORT}:80"
+      - "${APP_PORT}:80"
 
   db:
     image: postgres:15.1-bullseye
