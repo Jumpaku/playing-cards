@@ -4,7 +4,9 @@
 
 - Docker
 
-### 環境変数
+### 準備
+
+#### 環境変数
 
 ```sh
 cp .env.default .env
@@ -13,6 +15,13 @@ export $(sed -e 's/^#.*//g' .env)
 ```
 
 https://github.com/Jumpaku/playing-cards/blob/main/.env.default
+
+#### 初期化
+
+```sh
+docker compose up -d
+docker compose exec dev bash -c 'npm install'
+```
 
 ### ビルド
 
