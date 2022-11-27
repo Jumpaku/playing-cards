@@ -1,8 +1,84 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('dotenv'), require('express')) :
-    typeof define === 'function' && define.amd ? define(['dotenv', 'express'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.express));
-})(this, (function (dotenv, express) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('dotenv'), require('io-ts'), require('process'), require('express')) :
+    typeof define === 'function' && define.amd ? define(['dotenv', 'io-ts', 'process', 'express'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.types, global.process, global.express));
+})(this, (function (dotenv, types, process, express) { 'use strict';
+
+    class BaseError extends Error {
+        constructor(name, message, cause) {
+            super(message, { cause: cause });
+            this.name = name;
+            Error.captureStackTrace(this);
+        }
+        chainMessage() {
+            return chainMessage(this);
+        }
+    }
+    function chainMessage(err) {
+        const cause = err.cause;
+        if (cause instanceof Error) {
+            return `${err.name}(${err.message}) : ${chainMessage(cause)}`;
+        }
+        return `${err.name}(${err.message}) : ${cause}`;
+    }
+
+    class UnknownError extends BaseError {
+        static wrap(err) {
+            if (err instanceof BaseError) {
+                return err;
+            }
+            if (err instanceof Error) {
+                return new UnknownError(err);
+            }
+            return new UnknownError(new Error(`${err}`, { cause: err }));
+        }
+        constructor(cause) {
+            super("UnknownError", "error is wrapped", cause);
+        }
+    }
+
+    class PanicError extends BaseError {
+        constructor(message, cause) {
+            super("PanicError", message, cause);
+        }
+    }
+    function panic(message, err) {
+        console.error(new PanicError(message, err instanceof BaseError ? err : UnknownError.wrap(err)).chainMessage());
+        process.exit(1);
+    }
+
+    function validateType(type, obj) {
+        const r = type.decode(obj);
+        if (r._tag === "Left")
+            return [
+                null,
+                new TypeError("invalid type", UnknownError.wrap(`[${r.left.map((e) => e.value).join(",")}]`)),
+            ];
+        return [r.right, null];
+    }
+    class TypeError extends BaseError {
+        constructor(message, cause) {
+            super("TypeError", message, cause);
+        }
+    }
+
+    const Env = types.type({
+        APP_STAGE: types.string,
+        APP_PORT: types.string,
+    });
+    let env;
+    function getEnv() {
+        if (env == null) {
+            const [val, err] = validateType(Env, dotenv.config().parsed);
+            if (err != null) {
+                panic("invalid environment variables", err);
+            }
+            else {
+                env = val;
+            }
+        }
+        return env;
+    }
 
     const app = express();
     const port = 80;
@@ -18,6 +94,7 @@
     dotenv.config().parsed;
     function main() {
         console.log("hello");
+        console.log(getEnv());
         server();
     }
     main();
