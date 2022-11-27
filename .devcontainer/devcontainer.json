@@ -1,0 +1,19 @@
+{
+    "name": "dev",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "dev",
+    "workspaceFolder": "/app/",
+    "extensions": [
+      "donjayamanne.githistory",
+      "streetsidesoftware.code-spell-checker",
+      "esbenp.prettier-vscode",
+    ],
+    "settings": {
+      "editor.wordWrap": "on",
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+      }
+    }
+  }

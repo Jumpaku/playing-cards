@@ -1,0 +1,32 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "Web API for developing games using playing cards",
+  "scripts": {
+    "clean": "rm -rf ./dist/*",
+    "build": "run-s clean build:js",
+    "build:js": "run-s build:ts:lint build:js:compile build:js:bundle",
+    "build:ts:lint": "eslint --fix src/ts/**/*.ts",
+    "build:js:compile": "tsc",
+    "build:js:bundle": "rollup --sourcemap --format umd --file dist/index.bundle.js dist/js/index.js",
+    "start": "node dist/index.bundle.js",
+    "test": "echo 'test not implemented'"
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jumpaku/playing-cards.git"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/Jumpaku/playing-cards/issues"
+  },
+  "homepage": "https://github.com/Jumpaku/playing-cards#readme",
+  "devDependencies": {
+    "@types/node": "^18.11.9",
+    "@typescript-eslint/eslint-plugin": "^5.44.0",
+    "@typescript-eslint/parser": "^5.44.0",
+    "npm-run-all": "^4.1.5"
+  }
+}

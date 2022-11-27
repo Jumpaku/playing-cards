@@ -1,0 +1,25 @@
+version: "3.5"
+
+services:
+  dev:
+    build: "./"
+    working_dir: "/app/"
+    command: ["sleep", "infinity"]
+    volumes:
+      - "./:/app/:delegated"
+    ports:
+      - "8080:80"
+
+  db:
+    image: postgres:15.1-bullseye
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+    #ports:
+    #  - 5432:5432
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8081:8080
