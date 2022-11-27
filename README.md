@@ -15,5 +15,5 @@ docker compose exec app bash -c 'npm run build '
 
 ```sh
 docker compose up -d
-docker compose exec app bash -c 'npm run build '
+docker compose exec app bash -c 'npm run start'
 ```
