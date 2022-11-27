@@ -10,8 +10,7 @@
 
 ```sh
 cp .env.default .env
-vi .env #環境変数を設定
-export $(sed -e 's/^#.*//g' .env)
+vi .env #環境変数を設定する，.envファイルはdocker-compose.ymlに読み込まれる
 ```
 
 https://github.com/Jumpaku/playing-cards/blob/main/.env.default
