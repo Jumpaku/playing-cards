@@ -6,6 +6,11 @@
 
 ### 環境変数
 
+```sh
+cp .env.default .env
+vi .env
+```
+
 https://github.com/Jumpaku/playing-cards/blob/main/.env.default
 
 ### ビルド
