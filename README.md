@@ -9,7 +9,7 @@
 ```sh
 cp .env.default .env
 vi .env #環境変数を設定
-export $(cat .env|sed -s 's/#.*//g')
+export $(sed -s 's/#.*//g' .env)
 ```
 
 https://github.com/Jumpaku/playing-cards/blob/main/.env.default
