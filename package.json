@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Web API for developing games using playing cards",
   "scripts": {
-    "clean": "rm -rf ./dist/*",
     "build": "run-s clean build:js",
+    "clean": "rm -rf ./dist/*",
     "build:js": "run-s build:ts:lint build:js:compile build:js:bundle",
     "build:ts:lint": "eslint --fix src/ts/**/*.ts",
     "build:js:compile": "tsc",
