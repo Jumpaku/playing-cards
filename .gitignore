@@ -59,9 +59,6 @@ typings/
 .vscode
 .idea
 
-# Project
-/dist
-
 # dotenv environment variables file
 .env
 
