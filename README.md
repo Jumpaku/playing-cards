@@ -4,6 +4,10 @@
 
 - Docker
 
+### 環境変数
+
+https://github.com/Jumpaku/playing-cards/blob/main/.env.default
+
 ### ビルド
 
 ```sh
