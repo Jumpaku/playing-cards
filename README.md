@@ -26,12 +26,12 @@ docker compose exec dev bash -c 'npm install'
 
 ```sh
 docker compose up -d
-docker compose exec dev bash -c 'npm run build'
+docker compose exec dev bash -c 'make build'
 ```
 
 ### 起動
 
 ```sh
 docker compose up -d
-docker compose exec dev bash -c 'npm run start'
+docker compose exec dev bash -c 'make start'
 ```
