@@ -109,7 +109,6 @@
         }
         const [val, err] = validateType(Env, env.parsed);
         if (err != null) {
-            Env.name;
             return [null, new IoError(`invalid environment variables`, err)];
         }
         return [val, null];

@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import types from "io-ts";
-import { Result, BaseError, wrapErr, IoError } from "./errors";
+import { Result, wrapErr, IoError } from "./errors";
 import { validateType } from "./typing";
 
 export const Env = types.type({
