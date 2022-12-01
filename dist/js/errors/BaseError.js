@@ -5,13 +5,29 @@ export class BaseError extends Error {
         Error.captureStackTrace(this);
     }
     chainMessage() {
-        return chainMessage(this);
+        return chainMessageImpl(this).join(" | ");
+    }
+    print(cerr = console.error) {
+        printErrImpl(this, cerr);
+    }
+    getInfo() {
+        return {};
     }
 }
-export function chainMessage(err) {
-    const cause = err.cause;
-    if (cause instanceof Error) {
-        return `${err.name}(${err.message}) : ${chainMessage(cause)}`;
+function chainMessageImpl(err) {
+    if (err.cause instanceof Error) {
+        return [`${err.name}(${err.message})`, ...chainMessageImpl(err.cause)];
     }
-    return `${err.name}(${err.message}) : ${cause}`;
+    return [`${err.name}(${err.message})`, `${err.cause}`];
+}
+function printErrImpl(err, cerr) {
+    cerr(err);
+    if (err.cause == null) {
+        return;
+    }
+    if (!(err.cause instanceof Error)) {
+        cerr(err.cause);
+        return;
+    }
+    printErrImpl(err.cause, cerr);
 }

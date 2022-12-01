@@ -11,30 +11,46 @@
             Error.captureStackTrace(this);
         }
         chainMessage() {
-            return chainMessage(this);
+            return chainMessageImpl(this).join(" | ");
+        }
+        print(cerr = console.error) {
+            printErrImpl(this, cerr);
+        }
+        getInfo() {
+            return {};
         }
     }
-    function chainMessage(err) {
-        const cause = err.cause;
-        if (cause instanceof Error) {
-            return `${err.name}(${err.message}) : ${chainMessage(cause)}`;
+    function chainMessageImpl(err) {
+        if (err.cause instanceof Error) {
+            return [`${err.name}(${err.message})`, ...chainMessageImpl(err.cause)];
         }
-        return `${err.name}(${err.message}) : ${cause}`;
+        return [`${err.name}(${err.message})`, `${err.cause}`];
+    }
+    function printErrImpl(err, cerr) {
+        cerr(err);
+        if (err.cause == null) {
+            return;
+        }
+        if (!(err.cause instanceof Error)) {
+            cerr(err.cause);
+            return;
+        }
+        printErrImpl(err.cause, cerr);
     }
 
     class UnknownError extends BaseError {
-        static wrap(err) {
-            if (err instanceof BaseError) {
-                return err;
-            }
-            if (err instanceof Error) {
-                return new UnknownError(err);
-            }
-            return new UnknownError(new Error(`${err}`, { cause: err }));
-        }
         constructor(cause) {
-            super("UnknownError", "error is wrapped", cause);
+            super("UnknownError", cause != null ? "error is wrapped" : "", cause);
         }
+    }
+    function wrapErr(err) {
+        if (err instanceof BaseError) {
+            return err;
+        }
+        if (err instanceof Error) {
+            return new UnknownError(err);
+        }
+        return new UnknownError(new Error(`${err}`, { cause: err }));
     }
 
     class PanicError extends BaseError {
@@ -43,7 +59,7 @@
         }
     }
     function panic(message, err) {
-        console.error(new PanicError(message, err instanceof BaseError ? err : UnknownError.wrap(err)).chainMessage());
+        console.error(new PanicError(message, wrapErr(err)).chainMessage());
         process.exit(1);
     }
 
@@ -52,7 +68,7 @@
         if (r._tag === "Left")
             return [
                 null,
-                new TypeError("invalid type", UnknownError.wrap(`[${r.left.map((e) => e.value).join(",")}]`)),
+                new TypeError("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
             ];
         return [r.right, null];
     }
@@ -91,7 +107,6 @@
         });
     }
 
-    dotenv.config().parsed;
     function main() {
         console.log("hello");
         console.log(getEnv());
