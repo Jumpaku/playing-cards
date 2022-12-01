@@ -13,7 +13,7 @@
         chainMessage() {
             return chainMessageImpl(this).join(" | ");
         }
-        print(cerr = console.error) {
+        print(cerr = console.error.bind(console)) {
             printErrImpl(this, cerr);
         }
         getInfo() {
@@ -38,10 +38,24 @@
         printErrImpl(err.cause, cerr);
     }
 
+    class PanicError extends BaseError {
+        constructor(message, cause) {
+            super("PanicError", message, cause);
+        }
+    }
+
     class UnknownError extends BaseError {
         constructor(cause) {
             super("UnknownError", cause != null ? "error is wrapped" : "", cause);
         }
+    }
+
+    function panic(cause) {
+        if (!(cause instanceof BaseError)) {
+            panic(wrapErr(cause));
+        }
+        console.error(new PanicError("Panic!", cause));
+        process.exit(1);
     }
     function wrapErr(err) {
         if (err instanceof BaseError) {
@@ -53,14 +67,22 @@
         return new UnknownError(new Error(`${err}`, { cause: err }));
     }
 
-    class PanicError extends BaseError {
+    class TypeError extends BaseError {
         constructor(message, cause) {
-            super("PanicError", message, cause);
+            super("TypeError", message, cause);
         }
     }
-    function panic(message, err) {
-        console.error(new PanicError(message, wrapErr(err)).chainMessage());
-        process.exit(1);
+
+    class IoError extends BaseError {
+        constructor(message, cause) {
+            super("IoError", message, cause);
+        }
+    }
+
+    class InitError extends BaseError {
+        constructor(message, cause) {
+            super("InitError", message, cause);
+        }
     }
 
     function validateType(type, obj) {
@@ -72,33 +94,29 @@
             ];
         return [r.right, null];
     }
-    class TypeError extends BaseError {
-        constructor(message, cause) {
-            super("TypeError", message, cause);
-        }
-    }
 
     const Env = types.type({
         APP_STAGE: types.string,
         APP_PORT: types.string,
     });
-    let env;
-    function getEnv() {
-        if (env == null) {
-            const [val, err] = validateType(Env, dotenv.config().parsed);
-            if (err != null) {
-                panic("invalid environment variables", err);
-            }
-            else {
-                env = val;
-            }
+    function newEnv(path) {
+        const env = dotenv.config({ path });
+        if (env.error != null) {
+            return [
+                null,
+                new IoError("fail to load environment variables", wrapErr(env.error)),
+            ];
         }
-        return env;
+        const [val, err] = validateType(Env, env.parsed);
+        if (err != null) {
+            return [null, new IoError(`invalid environment variables`, err)];
+        }
+        return [val, null];
     }
 
-    const app = express();
-    const port = 80;
     function server() {
+        const app = express();
+        const port = 80;
         app.get("/", (req, res) => {
             res.send(req.headers);
         });
@@ -109,7 +127,11 @@
 
     function main() {
         console.log("hello");
-        console.log(getEnv());
+        const [env, err] = newEnv(".env");
+        if (err != null) {
+            panic(new InitError("fail loading env", err));
+        }
+        console.log(env);
         server();
     }
     main();

@@ -1,5 +1,5 @@
-import { wrapErr } from "./UnknownError";
 import { BaseError } from "./BaseError";
+import { wrapErr } from "./utils";
 export class ApiError extends BaseError {
     statusCode;
     static wrap(statusCode, err) {

@@ -1,7 +1,7 @@
 import { BaseError } from "./BaseError";
 
-export class PanicError extends BaseError {
+export class InitError extends BaseError {
   constructor(message: string, cause?: BaseError) {
-    super("PanicError", message, cause);
+    super("InitError", message, cause);
   }
 }

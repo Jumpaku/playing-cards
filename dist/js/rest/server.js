@@ -1,7 +1,7 @@
 import express from "express";
-const app = express();
-const port = 80;
 export function server() {
+    const app = express();
+    const port = 80;
     app.get("/", (req, res) => {
         res.send(req.headers);
     });
