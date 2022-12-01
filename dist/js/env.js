@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import types from "io-ts";
 import { panic } from "./errors";
-import { validateType } from "./errors";
+import { validateType } from "./typing";
 const Env = types.type({
     APP_STAGE: types.string,
     APP_PORT: types.string,

@@ -38,10 +38,21 @@
         printErrImpl(err.cause, cerr);
     }
 
+    class PanicError extends BaseError {
+        constructor(message, cause) {
+            super("PanicError", message, cause);
+        }
+    }
+
     class UnknownError extends BaseError {
         constructor(cause) {
             super("UnknownError", cause != null ? "error is wrapped" : "", cause);
         }
+    }
+
+    function panic(message, err) {
+        console.error(new PanicError(message, wrapErr(err)).chainMessage());
+        process.exit(1);
     }
     function wrapErr(err) {
         if (err instanceof BaseError) {
@@ -53,14 +64,10 @@
         return new UnknownError(new Error(`${err}`, { cause: err }));
     }
 
-    class PanicError extends BaseError {
+    class TypeError extends BaseError {
         constructor(message, cause) {
-            super("PanicError", message, cause);
+            super("TypeError", message, cause);
         }
-    }
-    function panic(message, err) {
-        console.error(new PanicError(message, wrapErr(err)).chainMessage());
-        process.exit(1);
     }
 
     function validateType(type, obj) {
@@ -71,11 +78,6 @@
                 new TypeError("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
             ];
         return [r.right, null];
-    }
-    class TypeError extends BaseError {
-        constructor(message, cause) {
-            super("TypeError", message, cause);
-        }
     }
 
     const Env = types.type({
