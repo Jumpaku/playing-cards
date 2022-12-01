@@ -13,7 +13,7 @@
         chainMessage() {
             return chainMessageImpl(this).join(" | ");
         }
-        print(cerr = console.error) {
+        print(cerr = console.error.bind(console)) {
             printErrImpl(this, cerr);
         }
         getInfo() {

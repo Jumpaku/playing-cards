@@ -7,7 +7,7 @@ export abstract class BaseError extends Error {
   public chainMessage(): string {
     return chainMessageImpl(this).join(" | ");
   }
-  public print(cerr: Console["error"] = console.error) {
+  public print(cerr: Console["error"] = console.error.bind(console)) {
     printErrImpl(this, cerr);
   }
   getInfo(): Record<string, unknown> {
