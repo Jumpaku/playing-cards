@@ -1,6 +1,6 @@
 import { exit } from "process";
 import { BaseError } from "./BaseError";
-import { UnknownError } from "./UnknownError";
+import { wrapErr } from "./UnknownError";
 
 export class PanicError extends BaseError {
   constructor(message: string, cause?: BaseError) {
@@ -9,11 +9,6 @@ export class PanicError extends BaseError {
 }
 
 export function panic(message: string, err?: unknown): never {
-  console.error(
-    new PanicError(
-      message,
-      err instanceof BaseError ? err : UnknownError.wrap(err)
-    ).chainMessage()
-  );
+  console.error(new PanicError(message, wrapErr(err)).chainMessage());
   exit(1);
 }

@@ -1,18 +1,35 @@
-export class BaseError extends Error {
+export abstract class BaseError extends Error {
   constructor(name: string, message: string, cause?: Error) {
     super(message, { cause: cause });
     this.name = name;
     Error.captureStackTrace(this);
   }
   public chainMessage(): string {
-    return chainMessage(this);
+    return chainMessageImpl(this).join(" | ");
+  }
+  public print(cerr: Console["error"] = console.error) {
+    printErrImpl(this, cerr);
+  }
+  getInfo(): Record<string, unknown> {
+    return {};
   }
 }
 
-export function chainMessage(err: Error): string {
-  const cause = err.cause;
-  if (cause instanceof Error) {
-    return `${err.name}(${err.message}) : ${chainMessage(cause)}`;
+function chainMessageImpl(err: Error): string[] {
+  if (err.cause instanceof Error) {
+    return [`${err.name}(${err.message})`, ...chainMessageImpl(err.cause)];
   }
-  return `${err.name}(${err.message}) : ${cause}`;
+  return [`${err.name}(${err.message})`, `${err.cause}`];
+}
+
+function printErrImpl(err: Error, cerr: Console["error"]) {
+  cerr(err);
+  if (err.cause == null) {
+    return;
+  }
+  if (!(err.cause instanceof Error)) {
+    cerr(err.cause);
+    return;
+  }
+  printErrImpl(err.cause, cerr);
 }

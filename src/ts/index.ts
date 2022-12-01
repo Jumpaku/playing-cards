@@ -1,7 +1,5 @@
-import dotenv from "dotenv";
 import { getEnv } from "./env";
-import { server } from "./server";
-dotenv.config().parsed;
+import { server } from "./rest/server";
 function main() {
   console.log("hello");
   console.log(getEnv());

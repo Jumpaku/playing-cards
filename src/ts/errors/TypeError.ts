@@ -1,7 +1,7 @@
 import { Type } from "io-ts";
 import { BaseError } from "./BaseError";
 import { Result } from "./Result";
-import { UnknownError } from "./UnknownError";
+import { wrapErr } from "./UnknownError";
 
 export function validateType<T, O = T, I = unknown>(
   type: Type<T, O, I>,
@@ -13,7 +13,7 @@ export function validateType<T, O = T, I = unknown>(
       null,
       new TypeError(
         "invalid type",
-        UnknownError.wrap(`[${r.left.map((e) => e.value).join(",")}]`)
+        wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)
       ),
     ];
   return [r.right, null];
