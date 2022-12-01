@@ -50,8 +50,11 @@
         }
     }
 
-    function panic(message, err) {
-        console.error(new PanicError(message, wrapErr(err)).chainMessage());
+    function panic(cause) {
+        if (!(cause instanceof BaseError)) {
+            panic(wrapErr(cause));
+        }
+        console.error(new PanicError("Panic!", cause));
         process.exit(1);
     }
     function wrapErr(err) {
@@ -70,6 +73,18 @@
         }
     }
 
+    class IoError extends BaseError {
+        constructor(message, cause) {
+            super("IoError", message, cause);
+        }
+    }
+
+    class InitError extends BaseError {
+        constructor(message, cause) {
+            super("InitError", message, cause);
+        }
+    }
+
     function validateType(type, obj) {
         const r = type.decode(obj);
         if (r._tag === "Left")
@@ -84,23 +99,25 @@
         APP_STAGE: types.string,
         APP_PORT: types.string,
     });
-    let env;
-    function getEnv() {
-        if (env == null) {
-            const [val, err] = validateType(Env, dotenv.config().parsed);
-            if (err != null) {
-                panic("invalid environment variables", err);
-            }
-            else {
-                env = val;
-            }
+    function newEnv(path) {
+        const env = dotenv.config({ path });
+        if (env.error != null) {
+            return [
+                null,
+                new IoError("fail to load environment variables", wrapErr(env.error)),
+            ];
         }
-        return env;
+        const [val, err] = validateType(Env, env.parsed);
+        if (err != null) {
+            Env.name;
+            return [null, new IoError(`invalid environment variables`, err)];
+        }
+        return [val, null];
     }
 
-    const app = express();
-    const port = 80;
     function server() {
+        const app = express();
+        const port = 80;
         app.get("/", (req, res) => {
             res.send(req.headers);
         });
@@ -111,7 +128,11 @@
 
     function main() {
         console.log("hello");
-        console.log(getEnv());
+        const [env, err] = newEnv(".env");
+        if (err != null) {
+            panic(new InitError("fail loading env", err));
+        }
+        console.log(env);
         server();
     }
     main();

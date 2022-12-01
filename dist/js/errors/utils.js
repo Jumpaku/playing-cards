@@ -2,8 +2,11 @@ import { exit } from "process";
 import { BaseError } from "./BaseError";
 import { PanicError } from "./PanicError";
 import { UnknownError } from "./UnknownError";
-export function panic(message, err) {
-    console.error(new PanicError(message, wrapErr(err)).chainMessage());
+export function panic(cause) {
+    if (!(cause instanceof BaseError)) {
+        panic(wrapErr(cause));
+    }
+    console.error(new PanicError("Panic!", cause));
     exit(1);
 }
 export function wrapErr(err) {
