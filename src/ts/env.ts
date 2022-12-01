@@ -10,7 +10,7 @@ export const Env = types.type({
 
 export type Env = types.TypeOf<typeof Env>;
 
-export function newEnv(path: string): Result<Env, BaseError> {
+export function newEnv(path: string): Result<Env, IoError> {
   const env = dotenv.config({ path });
   if (env.error != null) {
     return [
