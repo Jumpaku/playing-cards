@@ -15,7 +15,7 @@ services:
     working_dir: "/app/"
     volumes:
       - "./:/app/:delegated"
-    command: ["sh", "-c", "make install && make check"]
+    command: ["sh", "-c", "make init && make check"]
 
   db:
     image: postgres:15.1-bullseye

@@ -38,7 +38,7 @@ test: ## run test
 
 .PHONY: check
 check: ## check lint, compile, and test
-	eslint src/ts/**/*.ts && tsc --dry && make test
+	eslint src/ts/**/*.ts && tsc --noEmit && make test
 
 .PHONY: help
 help: ## show this help

@@ -1,3 +1,3 @@
-function panic(err: unknown) {
+export function panic(err: unknown) {
   console.error(err);
 }
