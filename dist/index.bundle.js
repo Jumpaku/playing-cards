@@ -44,12 +44,6 @@
         }
     }
 
-    class TypeError extends BaseError {
-        constructor(message, cause) {
-            super("TypeError", message, cause);
-        }
-    }
-
     class UnknownError extends BaseError {
         constructor(cause) {
             super("UnknownError", cause != null ? "error is wrapped" : "", cause);
@@ -85,6 +79,11 @@
         return new UnknownError(new Error(`${err}`, { cause: err }));
     }
 
+    class TypeError extends BaseError {
+        constructor(message, cause) {
+            super("TypeError", message, cause);
+        }
+    }
     function validateType(type, obj) {
         const r = type.decode(obj);
         if (r._tag === "Left")

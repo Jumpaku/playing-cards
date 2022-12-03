@@ -1,5 +1,12 @@
-import { Result, TypeError, wrapErr } from "./errors";
+import { Result, BaseError, wrapErr } from "./errors";
 import { Type } from "io-ts";
+
+export class TypeError extends BaseError {
+  constructor(message: string, cause?: BaseError) {
+    super("TypeError", message, cause);
+  }
+}
+
 export function validateType<T, O = T, I = unknown>(
   type: Type<T, O, I>,
   obj: I
