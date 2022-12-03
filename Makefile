@@ -1,10 +1,14 @@
 .DEFAULT_GOAL := help
 
+.PHONY: init
+init: ## install dependencies
+	npm install
+
 .PHONY: build
 build: ## build all scripts
 	make clean && make build_js
 
-.PHONY: build
+.PHONY: clean
 clean:
 	rm -rf ./dist/*
 
@@ -31,6 +35,10 @@ start: ## run server
 .PHONY: test
 test: ## run test
 	echo 'test not implemented'
+
+.PHONY: check
+check: ## check lint, compile, and test
+	eslint src/ts/**/*.ts && tsc --dry && make test
 
 .PHONY: help
 help: ## show this help

@@ -10,6 +10,13 @@ services:
     ports:
       - "${APP_PORT}:80"
 
+  check:
+    build: "./"
+    working_dir: "/app/"
+    volumes:
+      - "./:/app/:delegated"
+    command: ["sh", "-c", "make install && make check"]
+
   db:
     image: postgres:15.1-bullseye
     restart: always
