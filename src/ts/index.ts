@@ -1,3 +1,4 @@
+import { AppContext } from "./context";
 import { newEnv } from "./env";
 import { panic, InitError } from "./errors";
 import { server } from "./rest/server";
@@ -8,6 +9,9 @@ function main() {
     panic(new InitError("fail loading env", err));
   }
   console.log(env);
-  server();
+  const ctx: AppContext = {
+    env,
+  };
+  server(ctx, () => {});
 }
 main();
