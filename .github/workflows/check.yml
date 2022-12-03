@@ -27,6 +27,20 @@ jobs:
         continue-on-error: true
         run: npm list
 
+      - name: Cache docker image
+        id: cache-docker
+        uses: actions/cache@v3
+        with:
+          # docker cache files are stored in `/var/lib/docker/` on Ubuntu
+          path: |
+            /var/lib/docker/
+          key: ${{ runner.os }}-${{ hashFiles('Dockerfile') }}
+
+      - if: ${{ steps.cache-docker.outputs.cache-hit != 'true' }}
+        name: Show Dockerfile
+        continue-on-error: true
+        run: cat Dockerfile
+
       - name: Define environmental variables
         run: cp .env.default .env
 
