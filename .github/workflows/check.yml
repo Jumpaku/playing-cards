@@ -27,5 +27,8 @@ jobs:
         continue-on-error: true
         run: npm list
 
+      - name: Define environmental variables
+        run: cp .env.default .env
+
       - name: Install dependencies and check lint, compile, and test
         run: docker-compose run check
