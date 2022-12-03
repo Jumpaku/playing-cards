@@ -64,3 +64,6 @@ typings/
 
 # Next.js build output
 .next
+
+# docker image cache
+gha-image-cache
