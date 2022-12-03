@@ -7,7 +7,7 @@ import { RequestContext } from "../RequestContext";
 import { Response } from "../Response";
 export type Handler<Req, Res> = (
   ctx: RequestContext,
-  treq: Req
+  req: Req
 ) => Promise<Result<Res, ApiError>>;
 
 export function route<Req, Res>(
