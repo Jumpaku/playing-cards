@@ -1,10 +1,26 @@
 import dotenv from "dotenv";
-let env: {
-  APP_PORT: string;
-};
-export function getEnv() {
-  if (env == null) {
-    dotenv.config().parsed;
+import types from "io-ts";
+import { Result, wrapErr, IoError } from "./errors";
+import { validateType } from "./typing";
+
+export const Env = types.type({
+  APP_STAGE: types.string,
+  APP_PORT: types.string,
+});
+
+export type Env = types.TypeOf<typeof Env>;
+
+export function newEnv(path: string): Result<Env, IoError> {
+  const env = dotenv.config({ path });
+  if (env.error != null) {
+    return [
+      null,
+      new IoError("fail to load environment variables", wrapErr(env.error)),
+    ];
   }
-  return env;
+  const [val, err] = validateType(Env, env.parsed);
+  if (err != null) {
+    return [null, new IoError(`invalid environment variables`, err)];
+  }
+  return [val, null];
 }
