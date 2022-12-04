@@ -45,7 +45,7 @@ check: ## check lint, compile, and test
 	prettier --check src/ts/*.ts
 	
 	@echo 'Compile:'
-	tsc --noEmit && make test
+	tsc --noEmit
 	
 	@echo 'Test:'
 	make test
