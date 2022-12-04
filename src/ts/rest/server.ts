@@ -14,8 +14,11 @@ export function server(ctx: AppContext, routing: (app: Application) => void) {
   app.use(catchParseJsonError);
   app.use(newRequestContext);
   routing(app);
-  //app.use(path, validateJsonBody(Env));
-  //app[method](path, handler(Env));
+
+  /*
+   * App.use(path, validateJsonBody(Env));
+   * app[method](path, handler(Env));
+   */
   app.use(sendResponse);
   app.use(catchUnexpectedError);
   app.use(sendErrorResponse);

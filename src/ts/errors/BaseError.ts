@@ -1,15 +1,18 @@
 export abstract class BaseError extends Error {
   constructor(name: string, message: string, cause?: Error) {
-    super(message, { cause: cause });
+    super(message, { cause });
     this.name = name;
     Error.captureStackTrace(this);
   }
+
   public chainMessage(): string {
     return chainMessageImpl(this).join(" | ");
   }
+
   public print(cerr: Console["error"] = console.error.bind(console)) {
     printErrImpl(this, cerr);
   }
+
   getInfo(): Record<string, unknown> {
     return {};
   }

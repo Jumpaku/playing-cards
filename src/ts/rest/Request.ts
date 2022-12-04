@@ -5,7 +5,7 @@ export interface Request<
   ResBody = Record<string, unknown>,
   ReqBody = Record<string, unknown>
 > extends ExpressRequest<
-    { [key: string]: string },
+    Record<string, string>,
     ResBody,
     ReqBody,
     qs.ParsedQs,

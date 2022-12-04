@@ -1,7 +1,9 @@
 import { BaseError, wrapErr } from "../errors";
 import { status } from "./status";
 
-export type ApiErrorInfo = { statusCode: typeof status[keyof typeof status] };
+export type ApiErrorInfo = {
+  statusCode: typeof status[keyof typeof status];
+};
 export class ApiError extends BaseError {
   public static wrap(info: ApiErrorInfo, err: unknown): ApiError {
     return new ApiError(
@@ -10,6 +12,7 @@ export class ApiError extends BaseError {
       wrapErr(err)
     );
   }
+
   constructor(
     private readonly info: ApiErrorInfo,
     message: string,
@@ -17,6 +20,7 @@ export class ApiError extends BaseError {
   ) {
     super("AppError", message, cause);
   }
+
   override getInfo(): ApiErrorInfo {
     return this.info;
   }

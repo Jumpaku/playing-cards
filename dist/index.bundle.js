@@ -6,7 +6,7 @@
 
     class BaseError extends Error {
         constructor(name, message, cause) {
-            super(message, { cause: cause });
+            super(message, { cause });
             this.name = name;
             Error.captureStackTrace(this);
         }
@@ -222,8 +222,10 @@
         app.use(catchParseJsonError);
         app.use(newRequestContext);
         routing(app);
-        //app.use(path, validateJsonBody(Env));
-        //app[method](path, handler(Env));
+        /*
+         * App.use(path, validateJsonBody(Env));
+         * app[method](path, handler(Env));
+         */
         app.use(sendResponse);
         app.use(catchUnexpectedError);
         app.use(sendErrorResponse);
