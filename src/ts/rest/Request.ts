@@ -1,5 +1,5 @@
 import { Request as ExpressRequest } from "express";
-import { RequestContext } from "./RequestContext";
+import { RequestContext } from "./request_context";
 
 export interface Request<
   ResBody = Record<string, unknown>,

@@ -1,4 +1,4 @@
-import { Err } from "./BaseErr";
+import { Err } from "./base_err";
 
 export class InitErr extends Err {
   constructor(message: string, cause?: Err) {

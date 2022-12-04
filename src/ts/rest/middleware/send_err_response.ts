@@ -1,5 +1,5 @@
 import { NextFunction } from "express";
-import { ApiErr } from "../ApiErr";
+import { ApiErr } from "../api_err";
 import { Request } from "../Request";
 import { Response } from "../Response";
 

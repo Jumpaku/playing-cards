@@ -1,8 +1,8 @@
 import { exit } from "process";
 import { defaultString } from "../strings";
-import { Err, instanceOfErr } from "./BaseErr";
-import { PanicErr } from "./PanicErr";
-import { UnknownErr } from "./UnknownErr";
+import { Err, instanceOfErr } from "./base_err";
+import { PanicErr } from "./panic_err";
+import { UnknownErr } from "./unknown_err";
 
 export function panic(cause: Err | unknown): never {
   if (!(cause instanceof Err)) {

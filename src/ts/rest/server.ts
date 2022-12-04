@@ -1,11 +1,11 @@
 import express, { Application } from "express";
 import { AppContext } from "../context";
 import { json } from "body-parser";
-import catchParseJsonErr from "./middleware/catchParseJsonErr";
-import sendResponse from "./middleware/sendResponse";
-import sendErrResponse from "./middleware/sendErrResponse";
-import catchUnexpectedErr from "./middleware/catchUnexpectedErr";
-import newRequestContext from "./middleware/newRequestContext";
+import catchParseJsonErr from "./middleware/catch_parse_json_err";
+import sendResponse from "./middleware/send_response";
+import sendErrResponse from "./middleware/send_err_response";
+import catchUnexpectedErr from "./middleware/catch_unexpected_err";
+import newRequestContext from "./middleware/new_request_context";
 
 export function server(ctx: AppContext, routing: (app: Application) => void) {
   const app = express();

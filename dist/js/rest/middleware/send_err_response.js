@@ -1,4 +1,4 @@
-import { ApiErr } from "../ApiErr";
+import { ApiErr } from "../api_err";
 export default function sendErrResponse(err, req, res, next) {
     if (err instanceof ApiErr) {
         const info = err.getInfo();
