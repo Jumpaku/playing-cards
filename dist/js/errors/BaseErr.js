@@ -1,6 +1,12 @@
-export class BaseError extends Error {
-    constructor(name, message, cause) {
+import { defaultString } from "../strings";
+export function instanceOfErr(obj) {
+    return obj instanceof Err;
+}
+export class Err extends Error {
+    info;
+    constructor(name, message, info, cause) {
         super(message, { cause });
+        this.info = info;
         this.name = name;
         Error.captureStackTrace(this);
     }
@@ -11,14 +17,15 @@ export class BaseError extends Error {
         printErrImpl(this, cerr);
     }
     getInfo() {
-        return {};
+        return this.info;
     }
 }
 function chainMessageImpl(err) {
-    if (err.cause instanceof Error) {
-        return [`${err.name}(${err.message})`, ...chainMessageImpl(err.cause)];
+    const cause = err.cause;
+    if (cause instanceof Error) {
+        return [`${err.name}(${err.message})`, ...chainMessageImpl(cause)];
     }
-    return [`${err.name}(${err.message})`, `${err.cause}`];
+    return [`${err.name}(${err.message})`, `${defaultString(cause)}`];
 }
 function printErrImpl(err, cerr) {
     cerr(err);

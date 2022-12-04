@@ -1,6 +1,6 @@
 import { Application, NextFunction } from "express";
 import { Result } from "../../errors/Result";
-import { ApiError } from "../ApiError";
+import { ApiErr } from "../ApiErr";
 import { httpMethods } from "../methods";
 import { Request } from "../Request";
 import { RequestContext } from "../RequestContext";
@@ -8,7 +8,7 @@ import { Response } from "../Response";
 export type Handler<Req, Res> = (
   ctx: RequestContext,
   req: Req
-) => Promise<Result<Res, ApiError>>;
+) => Promise<Result<Res, ApiErr>>;
 
 export function route<Req, Res>(
   app: Application,

@@ -1,17 +1,17 @@
 import express, { Application } from "express";
 import { AppContext } from "../context";
 import { json } from "body-parser";
-import catchParseJsonError from "./middleware/catchParseJsonError";
+import catchParseJsonErr from "./middleware/catchParseJsonErr";
 import sendResponse from "./middleware/sendResponse";
-import sendErrorResponse from "./middleware/sendErrorResponse";
-import catchUnexpectedError from "./middleware/catchUnexpectedError";
+import sendErrResponse from "./middleware/sendErrResponse";
+import catchUnexpectedErr from "./middleware/catchUnexpectedErr";
 import newRequestContext from "./middleware/newRequestContext";
 
 export function server(ctx: AppContext, routing: (app: Application) => void) {
   const app = express();
 
   app.use(json({ strict: true, inflate: false }));
-  app.use(catchParseJsonError);
+  app.use(catchParseJsonErr);
   app.use(newRequestContext);
   routing(app);
 
@@ -20,8 +20,8 @@ export function server(ctx: AppContext, routing: (app: Application) => void) {
    * app[method](path, handler(Env));
    */
   app.use(sendResponse);
-  app.use(catchUnexpectedError);
-  app.use(sendErrorResponse);
+  app.use(catchUnexpectedErr);
+  app.use(sendErrResponse);
 
   app.listen(ctx.env.APP_PORT, () => {
     console.log(`Example app listening on port ${ctx.env.APP_PORT}`);

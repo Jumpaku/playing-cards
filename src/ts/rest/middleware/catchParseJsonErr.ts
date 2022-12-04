@@ -1,20 +1,20 @@
 import { NextFunction } from "express";
 import { wrapErr } from "../../errors";
-import { ApiError } from "../ApiError";
+import { ApiErr } from "../ApiErr";
 import { Request } from "../Request";
 import { Response } from "../Response";
 import { status } from "../status";
 
-export default function catchParseJsonError(
+export default function catchParseJsonErr(
   err: unknown,
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   next(
-    new ApiError(
-      { statusCode: status.BadRequest },
+    new ApiErr(
       "cannot parse json",
+      { statusCode: status.BadRequest },
       wrapErr(err)
     )
   );

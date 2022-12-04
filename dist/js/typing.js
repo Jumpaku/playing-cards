@@ -1,7 +1,7 @@
-import { BaseError, wrapErr } from "./errors";
-export class TypeError extends BaseError {
+import { Err, wrapErr } from "./errors";
+export class TypeErr extends Err {
     constructor(message, cause) {
-        super("TypeError", message, cause);
+        super("TypeErr", message, {}, cause);
     }
 }
 export function validateType(type, obj) {
@@ -9,7 +9,7 @@ export function validateType(type, obj) {
     if (r._tag === "Left")
         return [
             null,
-            new TypeError("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
+            new TypeErr("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
         ];
     return [r.right, null];
 }

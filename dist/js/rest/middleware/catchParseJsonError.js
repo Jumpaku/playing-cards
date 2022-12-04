@@ -1,6 +1,6 @@
 import { wrapErr } from "../../errors";
-import { ApiError } from "../ApiError";
+import { ApiErr } from "../ApiErr";
 import { status } from "../status";
-export default function catchParseJsonError(err, req, res, next) {
-    next(new ApiError({ statusCode: status.BadRequest }, "cannot parse json", wrapErr(err)));
+export default function catchParseJsonErr(err, req, res, next) {
+    next(new ApiErr("cannot parse json", { statusCode: status.BadRequest }, wrapErr(err)));
 }

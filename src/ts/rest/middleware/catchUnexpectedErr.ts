@@ -1,22 +1,22 @@
 import { NextFunction } from "express";
 import { wrapErr } from "../../errors";
-import { ApiError } from "../ApiError";
+import { ApiErr } from "../ApiErr";
 import { Request } from "../Request";
 import { Response } from "../Response";
 import { status } from "../status";
 
-export default function catchUnexpectedError(
+export default function catchUnexpectedErr(
   err: unknown,
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   const apiErr =
-    err instanceof ApiError
+    err instanceof ApiErr
       ? err
-      : new ApiError(
-          { statusCode: status.InternalServerError },
+      : new ApiErr(
           "Unexpected Error",
+          { statusCode: status.InternalServerError },
           wrapErr(err)
         );
   next(apiErr);

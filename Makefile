@@ -14,11 +14,15 @@ clean:
 
 .PHONY: build_js
 build_js:
-	make build_ts_lint && make build_js_compile && make build_js_bundle
+	make build_ts_lint && make build_ts_format && make build_js_compile && make build_js_bundle
 
 .PHONY: build_ts_lint
 build_ts_lint:
 	eslint --fix src/ts/**/*.ts
+
+.PHONY: build_ts_format
+build_ts_format:
+	prettier --write src/ts/**/*.ts
 
 .PHONY: build_js_compile
 build_js_compile:
@@ -38,7 +42,7 @@ test: ## run test
 
 .PHONY: check
 check: ## check lint, compile, and test
-	eslint src/ts/**/*.ts && tsc --noEmit && make test
+	eslint src/ts/**/*.ts && prettier --check src/ts/*.ts && tsc --noEmit && make test
 
 .PHONY: help
 help: ## show this help
