@@ -1,9 +1,7 @@
 import { NextFunction } from "express";
 import { wrapErr } from "../../errors";
 import { ApiErr } from "../api_err";
-import { Request } from "../Request";
-import { Response } from "../Response";
-import { status } from "../status";
+import { Request, Response, status } from "../utils";
 
 export default function catchUnexpectedErr(
   err: unknown,

@@ -1,7 +1,7 @@
 import { Err } from "../errors";
-
+import { Status } from "./utils";
 export type ApiErrInfo = {
-  statusCode: number;
+  statusCode: Status[keyof Status];
 };
 export class ApiErr extends Err<ApiErrInfo> {
   constructor(message: string, info: ApiErrInfo, cause?: Err) {

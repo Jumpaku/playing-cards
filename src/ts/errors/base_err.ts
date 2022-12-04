@@ -1,9 +1,5 @@
 import { defaultString } from "../strings";
 
-export function instanceOfErr(obj: unknown): obj is Err {
-  return obj instanceof Err;
-}
-
 export class Err<
   Info extends Record<string, unknown> = Record<string, unknown>
 > extends Error {

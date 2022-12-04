@@ -1,7 +1,6 @@
 import { NextFunction } from "express";
 import { ApiErr } from "../api_err";
-import { Request } from "../Request";
-import { Response } from "../Response";
+import { Request, Response } from "../utils";
 
 export default function sendErrResponse(
   err: unknown,

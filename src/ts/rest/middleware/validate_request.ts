@@ -2,9 +2,7 @@ import { NextFunction } from "express";
 import typing from "io-ts";
 import { validateType } from "../../typing";
 import { ApiErr } from "../api_err";
-import { Request } from "../Request";
-import { Response } from "../Response";
-import { status } from "../status";
+import { Request, Response, status } from "../utils";
 
 export default function validateJsonBody<JsonBody>(
   reqType: typing.Type<JsonBody>

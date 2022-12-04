@@ -1,8 +1,11 @@
 import { exit } from "process";
 import { defaultString } from "../strings";
-import { Err, instanceOfErr } from "./base_err";
+import { Err } from "./base_err";
 import { PanicErr } from "./panic_err";
 import { UnknownErr } from "./unknown_err";
+export function instanceOfErr(obj) {
+    return obj instanceof Err;
+}
 export function panic(cause) {
     if (!(cause instanceof Err)) {
         panic(wrapErr(cause));

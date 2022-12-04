@@ -1,7 +1,6 @@
 import { NextFunction } from "express";
 import { AppContext } from "../../context";
-import { Request } from "../Request";
-import { Response } from "../Response";
+import { Request, Response } from "../utils";
 
 export default function newRequestContext(
   app: AppContext

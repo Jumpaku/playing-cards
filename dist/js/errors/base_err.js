@@ -1,7 +1,4 @@
 import { defaultString } from "../strings";
-export function instanceOfErr(obj) {
-    return obj instanceof Err;
-}
 export class Err extends Error {
     info;
     constructor(name, message, info, cause) {

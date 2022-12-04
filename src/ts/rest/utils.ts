@@ -1,3 +1,39 @@
+import { RequestContext } from "./request_context";
+import { Request as ExpressRequest } from "express";
+import { Response as ExpressResponse } from "express";
+
+export interface Request<
+  ResBody = Record<string, unknown>,
+  ReqBody = Record<string, unknown>
+> extends ExpressRequest<
+    Record<string, string>,
+    ResBody,
+    ReqBody,
+    qs.ParsedQs,
+    Record<string, unknown>
+  > {
+  ctx?: RequestContext;
+}
+
+export interface Response<ResBody = Record<string, unknown>>
+  extends ExpressResponse<ResBody, Record<string, unknown>> {
+  body?: ResBody;
+}
+
+export const methods = [
+  "get",
+  "head",
+  "post",
+  "put",
+  "delete",
+  "connect",
+  "options",
+  "trace",
+  "patch",
+] as const;
+
+export type Status = typeof status;
+
 export const status = {
   // 1XX
   Continue: 100,

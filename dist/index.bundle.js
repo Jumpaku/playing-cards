@@ -22,9 +22,6 @@
                                     : `object ${obj.toString()}`;
     }
 
-    function instanceOfErr(obj) {
-        return obj instanceof Err;
-    }
     class Err extends Error {
         info;
         constructor(name, message, info, cause) {
@@ -86,6 +83,9 @@
         }
     }
 
+    function instanceOfErr(obj) {
+        return obj instanceof Err;
+    }
     function panic(cause) {
         if (!(cause instanceof Err)) {
             panic(wrapErr(cause));

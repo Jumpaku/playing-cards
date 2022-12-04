@@ -1,8 +1,14 @@
 import { exit } from "process";
 import { defaultString } from "../strings";
-import { Err, instanceOfErr } from "./base_err";
+import { Err } from "./base_err";
 import { PanicErr } from "./panic_err";
 import { UnknownErr } from "./unknown_err";
+
+export type Result<V, E extends Err> = [V, null] | [null, E];
+
+export function instanceOfErr(obj: unknown): obj is Err {
+  return obj instanceof Err;
+}
 
 export function panic(cause: Err | unknown): never {
   if (!(cause instanceof Err)) {
