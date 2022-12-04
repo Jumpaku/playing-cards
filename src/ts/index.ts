@@ -1,6 +1,7 @@
 import { AppContext } from "./context";
 import { newEnv } from "./env";
 import { panic, InitErr } from "./errors";
+import { CryptoIdGen } from "./random/id_gen";
 import { server } from "./rest/server";
 function main() {
   console.log("hello");
@@ -11,6 +12,7 @@ function main() {
   console.log(env);
   const ctx: AppContext = {
     env,
+    idGen: new CryptoIdGen(),
   };
   server(ctx, () => {});
 }
