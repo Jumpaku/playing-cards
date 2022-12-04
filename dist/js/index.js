@@ -8,6 +8,9 @@ function main() {
         panic(new InitError("fail loading env", err));
     }
     console.log(env);
-    server();
+    const ctx = {
+        env,
+    };
+    server(ctx, () => { });
 }
 main();
