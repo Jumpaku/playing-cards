@@ -1,11 +1,11 @@
 import { Application, NextFunction } from "express";
-import { Result } from "../../errors";
-import { ApiErr } from "../api_err";
-import { RequestContext } from "../request_context";
-import { methods, Request, Response } from "../utils";
+import { Result } from "../lib/errors";
+import { ApiErr } from "./api_err";
+import { CallContext } from "./call_context";
+import { methods, Request, Response } from "./utils";
 
 export type Handler<Req, Res> = (
-  ctx: RequestContext,
+  ctx: CallContext,
   req: Req
 ) => Promise<Result<Res, ApiErr>>;
 
@@ -21,15 +21,16 @@ export function route<Req, Res>(
     next: NextFunction
   ) => {
     const args = { ...req.body, ...req.query, ...req.params };
-    const [result, apiErr] = await handler(req.ctx as any, args);
+    const [result, apiErr] = await handler(req.ctx!, args);
     if (apiErr != null) {
       return next(apiErr);
     }
     res.body = result;
+    next();
   };
   app[method](
     path,
-    async (req: Request<Res, Req>, res: Response<Res>, next: NextFunction) => {
+    (req: Request<Res, Req>, res: Response<Res>, next: NextFunction) => {
       wrap(req, res, next).catch(next);
     }
   );

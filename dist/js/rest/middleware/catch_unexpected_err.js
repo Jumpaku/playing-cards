@@ -1,4 +1,4 @@
-import { wrapErr } from "../../errors";
+import { wrapErr } from "../../lib/errors";
 import { ApiErr } from "../api_err";
 import { status } from "../utils";
 export default function catchUnexpectedErr(err, req, res, next) {

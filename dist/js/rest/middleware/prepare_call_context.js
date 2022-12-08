@@ -1,4 +1,4 @@
-export default function newRequestContext(app) {
+export default function prepareCallContext(app) {
     return (req, res, next) => {
         req.ctx = {
             app: app,

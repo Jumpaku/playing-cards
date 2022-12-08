@@ -1,8 +1,9 @@
-import { AppContext } from "./context";
-import { newEnv } from "./env";
-import { panic, InitErr } from "./errors";
-import { CryptoIdGen } from "./random/id_gen";
+import { AppContext } from "./app/context";
+import { newEnv } from "./app/env";
+import { panic, InitErr } from "./lib/errors";
+import { CryptoIdGen } from "./lib/id_gen";
 import { server } from "./rest/server";
+
 function main() {
   console.log("hello");
   const [env, err] = newEnv(".env");

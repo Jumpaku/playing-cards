@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import types from "io-ts";
-import { Result, wrapErr, IoErr } from "./errors";
-import { validateType } from "./typing";
+import { Result, wrapErr, IoErr } from "../lib/errors";
+import { validateType } from "../lib/typing";
 
 export const Env = types.type({
   APP_STAGE: types.string,

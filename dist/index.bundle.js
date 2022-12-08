@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('dotenv'), require('io-ts'), require('process'), require('express'), require('body-parser')) :
-    typeof define === 'function' && define.amd ? define(['dotenv', 'io-ts', 'process', 'express', 'body-parser'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.types, global.process, global.express, global.bodyParser));
-})(this, (function (dotenv, types, process, express, bodyParser) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('dotenv'), require('io-ts'), require('process'), require('crypto'), require('express'), require('body-parser')) :
+    typeof define === 'function' && define.amd ? define(['dotenv', 'io-ts', 'process', 'crypto', 'express', 'body-parser'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.typing, global.process, global.crypto, global.express, global.bodyParser));
+})(this, (function (dotenv, typing, process, crypto, express, bodyParser) { 'use strict';
 
     function defaultString(obj) {
         return obj === null
@@ -118,9 +118,9 @@
         return [r.right, null];
     }
 
-    const Env = types.type({
-        APP_STAGE: types.string,
-        APP_PORT: types.string,
+    const Env = typing.type({
+        APP_STAGE: typing.string,
+        APP_PORT: typing.string,
     });
     function newEnv(path) {
         const env = dotenv.config({ path });
@@ -135,6 +135,21 @@
             return [null, new IoErr(`invalid environment variables`, err)];
         }
         return [val, null];
+    }
+
+    class CryptoIdGen {
+        current;
+        constructor(current = crypto.randomUUID()) {
+            this.current = current;
+        }
+        value() {
+            return this.current;
+        }
+        next() {
+            const v = this.value();
+            this.current = crypto.randomUUID();
+            return v;
+        }
     }
 
     class ApiErr extends Err {
@@ -221,7 +236,7 @@
         next(apiErr);
     }
 
-    function newRequestContext(app) {
+    function prepareCallContext(app) {
         return (req, res, next) => {
             req.ctx = {
                 app: app,
@@ -232,16 +247,170 @@
         };
     }
 
+    function route(app, method, path, handler) {
+        const wrap = async (req, res, next) => {
+            const args = { ...req.body, ...req.query, ...req.params };
+            const [result, apiErr] = await handler(req.ctx, args);
+            if (apiErr != null) {
+                return next(apiErr);
+            }
+            res.body = result;
+            next();
+        };
+        app[method](path, (req, res, next) => {
+            wrap(req, res, next).catch(next);
+        });
+    }
+
+    const examples = new Map();
+
+    const Req$4 = typing.type({});
+    typing.type({
+        list: typing.array(typing.type({
+            example_id: typing.string,
+            str_value: typing.string,
+            num_value: typing.number,
+            create_time: typing.string,
+            update_time: typing.string,
+        })),
+    });
+    const handler$4 = async (ctx, req) => {
+        return [
+            {
+                list: [...examples.entries()].map(([k, v]) => ({
+                    example_id: k,
+                    str_value: v.value.str,
+                    num_value: v.value.num,
+                    create_time: v.createTime.toISOString(),
+                    update_time: v.updateTime.toISOString(),
+                })),
+            },
+            null,
+        ];
+    };
+
+    const Req$3 = typing.type({
+        str_value: typing.string,
+        num_value: typing.number,
+    });
+    typing.type({
+        example_id: typing.string,
+    });
+    const handler$3 = async (ctx, req) => {
+        const example = {
+            value: { str: req.str_value, num: req.num_value },
+            createTime: ctx.timestamp,
+            updateTime: ctx.timestamp,
+        };
+        const exampleId = ctx.app.idGen.next();
+        examples.set(exampleId, example);
+        return [{ example_id: exampleId }, null];
+    };
+
+    const Req$2 = typing.type({
+        example_id: typing.string,
+    });
+    typing.type({
+        example_id: typing.string,
+        str_value: typing.string,
+        num_value: typing.number,
+        create_time: typing.string,
+        update_time: typing.string,
+    });
+    const handler$2 = async (ctx, req) => {
+        const e = examples.get(req.example_id);
+        if (e == null) {
+            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+        }
+        return [
+            {
+                example_id: req.example_id,
+                str_value: e.value.str,
+                num_value: e.value.num,
+                create_time: e.createTime.toISOString(),
+                update_time: e.updateTime.toISOString(),
+            },
+            null,
+        ];
+    };
+
+    const Req$1 = typing.type({
+        example_id: typing.string,
+        str_value: typing.union([typing.string, typing.undefined]),
+        num_value: typing.union([typing.number, typing.undefined]),
+    });
+    typing.type({});
+    const handler$1 = async (ctx, req) => {
+        const oldExample = examples.get(req.example_id);
+        if (oldExample == null) {
+            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+        }
+        const newExample = { ...oldExample, value: { ...oldExample.value } };
+        if (req.str_value != null) {
+            newExample.value.str = req.str_value;
+        }
+        if (req.num_value != null) {
+            newExample.value.num = req.num_value;
+        }
+        newExample.updateTime = ctx.timestamp;
+        examples.set(req.example_id, newExample);
+        return [{}, null];
+    };
+
+    const Req = typing.type({
+        example_id: typing.string,
+    });
+    typing.type({});
+    const handler = async (ctx, req) => {
+        const oldExample = examples.get(req.example_id);
+        if (oldExample == null) {
+            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+        }
+        examples.delete(req.example_id);
+        return [{}, null];
+    };
+
+    function validateJsonBody(method, reqType) {
+        return (req, res, next) => {
+            if (req.method !== method) {
+                return next();
+            }
+            const [_, typeErr] = validateType(reqType, {
+                ...req.body,
+                ...req.query,
+                ...req.params,
+            });
+            if (typeErr != null) {
+                return next(new ApiErr("Bad request", { statusCode: status.BadRequest }, typeErr));
+            }
+            next();
+        };
+    }
+
+    function api_route(app) {
+        app.use("/example", validateJsonBody("get", Req$4));
+        route(app, "get", "/example", handler$4);
+        app.use("/example", validateJsonBody("post", Req$3));
+        route(app, "post", "/example", handler$3);
+        app.use("/example/:example_id", validateJsonBody("get", Req$2));
+        route(app, "get", "/example/:example_id", handler$2);
+        app.use("/example/:example_id", validateJsonBody("put", Req$1));
+        route(app, "put", "/example/:example_id", handler$1);
+        app.use("/example/:example_id", validateJsonBody("delete", Req));
+        route(app, "delete", "/example/:example_id/delete", handler);
+        return app;
+    }
+
     function server(ctx, routing) {
         const app = express();
         app.use(bodyParser.json({ strict: true, inflate: false }));
         app.use(catchParseJsonErr);
-        app.use(newRequestContext);
+        app.use(prepareCallContext);
         routing(app);
         /*
          * App.use(path, validateJsonBody(Env));
-         * app[method](path, handler(Env));
          */
+        api_route(app);
         app.use(sendResponse);
         app.use(catchUnexpectedErr);
         app.use(sendErrResponse);
@@ -259,6 +428,7 @@
         console.log(env);
         const ctx = {
             env,
+            idGen: new CryptoIdGen(),
         };
         server(ctx, () => { });
     }

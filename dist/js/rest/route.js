@@ -6,8 +6,9 @@ export function route(app, method, path, handler) {
             return next(apiErr);
         }
         res.body = result;
+        next();
     };
-    app[method](path, async (req, res, next) => {
+    app[method](path, (req, res, next) => {
         wrap(req, res, next).catch(next);
     });
 }

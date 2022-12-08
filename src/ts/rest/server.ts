@@ -1,24 +1,26 @@
 import express, { Application } from "express";
-import { AppContext } from "../context";
+import { AppContext } from "../app/context";
 import { json } from "body-parser";
 import catchParseJsonErr from "./middleware/catch_parse_json_err";
 import sendResponse from "./middleware/send_response";
 import sendErrResponse from "./middleware/send_err_response";
 import catchUnexpectedErr from "./middleware/catch_unexpected_err";
-import newRequestContext from "./middleware/new_request_context";
+import prepareCallContext from "./middleware/prepare_call_context";
+import { api_route } from "./api/gen/api_route";
 
 export function server(ctx: AppContext, routing: (app: Application) => void) {
   const app = express();
 
   app.use(json({ strict: true, inflate: false }));
   app.use(catchParseJsonErr);
-  app.use(newRequestContext);
+  app.use(prepareCallContext);
   routing(app);
 
   /*
    * App.use(path, validateJsonBody(Env));
-   * app[method](path, handler(Env));
    */
+  api_route(app);
+
   app.use(sendResponse);
   app.use(catchUnexpectedErr);
   app.use(sendErrResponse);

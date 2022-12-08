@@ -1,5 +1,6 @@
-import { newEnv } from "./env";
-import { panic, InitErr } from "./errors";
+import { newEnv } from "./app/env";
+import { panic, InitErr } from "./lib/errors";
+import { CryptoIdGen } from "./lib/id_gen";
 import { server } from "./rest/server";
 function main() {
     console.log("hello");
@@ -10,6 +11,7 @@ function main() {
     console.log(env);
     const ctx = {
         env,
+        idGen: new CryptoIdGen(),
     };
     server(ctx, () => { });
 }

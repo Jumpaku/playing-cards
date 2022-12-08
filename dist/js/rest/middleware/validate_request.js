@@ -1,8 +1,11 @@
-import { validateType } from "../../typing";
+import { validateType } from "../../lib/typing";
 import { ApiErr } from "../api_err";
 import { status } from "../utils";
-export default function validateJsonBody(reqType) {
+export default function validateJsonBody(method, reqType) {
     return (req, res, next) => {
+        if (req.method !== method) {
+            return next();
+        }
         const [_, typeErr] = validateType(reqType, {
             ...req.body,
             ...req.query,

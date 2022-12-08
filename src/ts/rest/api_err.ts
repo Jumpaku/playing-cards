@@ -1,4 +1,4 @@
-import { Err } from "../errors";
+import { Err } from "../lib/errors";
 import { Status } from "./utils";
 export type ApiErrInfo = {
   statusCode: Status[keyof Status];

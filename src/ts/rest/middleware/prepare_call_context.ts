@@ -1,8 +1,8 @@
 import { NextFunction } from "express";
-import { AppContext } from "../../context";
+import { AppContext } from "../../app/context";
 import { Request, Response } from "../utils";
 
-export default function newRequestContext(
+export default function prepareCallContext(
   app: AppContext
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
