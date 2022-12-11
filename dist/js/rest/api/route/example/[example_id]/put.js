@@ -13,23 +13,25 @@ export const Req = typing.type({
     ]),
 });
 export const Res = typing.type({});
-export const handler = async (ctx, req) => {
-    const oldExample = examples.get(req.example_id);
-    if (oldExample == null) {
-        return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
-    }
-    const newExample = { ...oldExample };
-    if (req.value == null) {
+export default class {
+    requestType = Req;
+    async handle(ctx, req) {
+        const oldExample = examples.get(req.example_id);
+        if (oldExample == null) {
+            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+        }
+        const newExample = { ...oldExample };
+        if (req.value == null) {
+            return [{}, null];
+        }
+        if (req.value.str != null) {
+            newExample.value_str = req.value.str;
+        }
+        if (req.value.num != null) {
+            newExample.value_num = req.value.num;
+        }
+        newExample.updateTime = ctx.timestamp;
+        examples.set(req.example_id, newExample);
         return [{}, null];
     }
-    if (req.value.str != null) {
-        newExample.value_str = req.value.str;
-    }
-    if (req.value.num != null) {
-        newExample.value_num = req.value.num;
-    }
-    newExample.updateTime = ctx.timestamp;
-    examples.set(req.example_id, newExample);
-    return [{}, null];
-};
-export default handler;
+}

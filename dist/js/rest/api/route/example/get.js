@@ -12,17 +12,19 @@ export const Res = typing.type({
         update_time: typing.string,
     })),
 });
-export const handler = async (ctx, req) => {
-    return [
-        {
-            list: [...examples.entries()].map(([k, v]) => ({
-                example_id: k,
-                value: { str: v.value_str, num: v.value_num },
-                create_time: v.createTime.toISOString(),
-                update_time: v.updateTime.toISOString(),
-            })),
-        },
-        null,
-    ];
-};
-export default handler;
+export default class {
+    requestType = Req;
+    async handle(ctx, req) {
+        return [
+            {
+                list: [...examples.entries()].map(([k, v]) => ({
+                    example_id: k,
+                    value: { str: v.value_str, num: v.value_num },
+                    create_time: v.createTime.toISOString(),
+                    update_time: v.updateTime.toISOString(),
+                })),
+            },
+            null,
+        ];
+    }
+}

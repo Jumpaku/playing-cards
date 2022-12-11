@@ -363,12 +363,12 @@
         }
     }
 
-    function route(ctx, router, method, path, reqType, handler) {
+    function route(ctx, router, method, path, handler) {
         const wrappedHandler = async (req, res, next) => {
             const callCtx = req.ctx;
             requireNonNull(callCtx);
             // Validate request args
-            const [args, typeErr] = validateType(reqType, {
+            const [args, typeErr] = validateType(handler.requestType, {
                 ...req.body,
                 ...req.query,
                 ...req.params,
@@ -378,7 +378,7 @@
             }
             try {
                 // Invoke handler with args
-                const [result, apiErr] = await handler(callCtx, args);
+                const [result, apiErr] = await handler.handle(callCtx, args);
                 if (apiErr != null) {
                     return next(apiErr);
                 }
@@ -418,19 +418,22 @@
             update_time: typing.string,
         })),
     });
-    const handler$4 = async (ctx, req) => {
-        return [
-            {
-                list: [...examples.entries()].map(([k, v]) => ({
-                    example_id: k,
-                    value: { str: v.value_str, num: v.value_num },
-                    create_time: v.createTime.toISOString(),
-                    update_time: v.updateTime.toISOString(),
-                })),
-            },
-            null,
-        ];
-    };
+    class example_get {
+        requestType = Req$4;
+        async handle(ctx, req) {
+            return [
+                {
+                    list: [...examples.entries()].map(([k, v]) => ({
+                        example_id: k,
+                        value: { str: v.value_str, num: v.value_num },
+                        create_time: v.createTime.toISOString(),
+                        update_time: v.updateTime.toISOString(),
+                    })),
+                },
+                null,
+            ];
+        }
+    }
 
     const Req$3 = typing.type({
         value: typing.type({
@@ -441,17 +444,20 @@
     typing.type({
         example_id: typing.string,
     });
-    const handler$3 = async (ctx, req) => {
-        const example = {
-            value_str: req.value.str,
-            value_num: req.value.num,
-            createTime: ctx.timestamp,
-            updateTime: ctx.timestamp,
-        };
-        const exampleId = ctx.app.idGen.next();
-        examples.set(exampleId, example);
-        return [{ example_id: exampleId }, null];
-    };
+    class example_post {
+        requestType = Req$3;
+        async handle(ctx, req) {
+            const example = {
+                value_str: req.value.str,
+                value_num: req.value.num,
+                createTime: ctx.timestamp,
+                updateTime: ctx.timestamp,
+            };
+            const exampleId = ctx.app.idGen.next();
+            examples.set(exampleId, example);
+            return [{ example_id: exampleId }, null];
+        }
+    }
 
     const Req$2 = typing.type({
         example_id: typing.string,
@@ -465,24 +471,27 @@
         create_time: typing.string,
         update_time: typing.string,
     });
-    const handler$2 = async (ctx, req) => {
-        const e = examples.get(req.example_id);
-        if (e == null) {
-            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
-        }
-        return [
-            {
-                example_id: req.example_id,
-                value: {
-                    str: e.value_str,
-                    num: e.value_num,
+    class example_example_id_get {
+        requestType = Req$2;
+        async handle(ctx, req) {
+            const e = examples.get(req.example_id);
+            if (e == null) {
+                return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+            }
+            return [
+                {
+                    example_id: req.example_id,
+                    value: {
+                        str: e.value_str,
+                        num: e.value_num,
+                    },
+                    create_time: e.createTime.toISOString(),
+                    update_time: e.updateTime.toISOString(),
                 },
-                create_time: e.createTime.toISOString(),
-                update_time: e.updateTime.toISOString(),
-            },
-            null,
-        ];
-    };
+                null,
+            ];
+        }
+    }
 
     const Req$1 = typing.type({
         example_id: typing.string,
@@ -495,45 +504,51 @@
         ]),
     });
     typing.type({});
-    const handler$1 = async (ctx, req) => {
-        const oldExample = examples.get(req.example_id);
-        if (oldExample == null) {
-            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
-        }
-        const newExample = { ...oldExample };
-        if (req.value == null) {
+    class example_example_id_put {
+        requestType = Req$1;
+        async handle(ctx, req) {
+            const oldExample = examples.get(req.example_id);
+            if (oldExample == null) {
+                return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+            }
+            const newExample = { ...oldExample };
+            if (req.value == null) {
+                return [{}, null];
+            }
+            if (req.value.str != null) {
+                newExample.value_str = req.value.str;
+            }
+            if (req.value.num != null) {
+                newExample.value_num = req.value.num;
+            }
+            newExample.updateTime = ctx.timestamp;
+            examples.set(req.example_id, newExample);
             return [{}, null];
         }
-        if (req.value.str != null) {
-            newExample.value_str = req.value.str;
-        }
-        if (req.value.num != null) {
-            newExample.value_num = req.value.num;
-        }
-        newExample.updateTime = ctx.timestamp;
-        examples.set(req.example_id, newExample);
-        return [{}, null];
-    };
+    }
 
     const Req = typing.type({
         example_id: typing.string,
     });
     typing.type({});
-    const handler = async (ctx, req) => {
-        const oldExample = examples.get(req.example_id);
-        if (oldExample == null) {
-            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+    class example_example_id_delete {
+        requestType = Req;
+        async handle(ctx, req) {
+            const oldExample = examples.get(req.example_id);
+            if (oldExample == null) {
+                return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+            }
+            examples.delete(req.example_id);
+            return [{}, null];
         }
-        examples.delete(req.example_id);
-        return [{}, null];
-    };
+    }
 
     function api_route(ctx, router) {
-        route(ctx, router, "get", "/example", Req$4, handler$4);
-        route(ctx, router, "post", "/example", Req$3, handler$3);
-        route(ctx, router, "get", "/example/:example_id", Req$2, handler$2);
-        route(ctx, router, "put", "/example/:example_id", Req$1, handler$1);
-        route(ctx, router, "delete", "/example/:example_id", Req, handler);
+        route(ctx, router, "get", "/example", new example_get());
+        route(ctx, router, "post", "/example", new example_post());
+        route(ctx, router, "get", "/example/:example_id", new example_example_id_get());
+        route(ctx, router, "put", "/example/:example_id", new example_example_id_put());
+        route(ctx, router, "delete", "/example/:example_id", new example_example_id_delete());
         return router;
     }
 

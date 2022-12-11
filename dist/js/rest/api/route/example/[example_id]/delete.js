@@ -6,12 +6,14 @@ export const Req = typing.type({
     example_id: typing.string,
 });
 export const Res = typing.type({});
-export const handler = async (ctx, req) => {
-    const oldExample = examples.get(req.example_id);
-    if (oldExample == null) {
-        return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+export default class {
+    requestType = Req;
+    async handle(ctx, req) {
+        const oldExample = examples.get(req.example_id);
+        if (oldExample == null) {
+            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+        }
+        examples.delete(req.example_id);
+        return [{}, null];
     }
-    examples.delete(req.example_id);
-    return [{}, null];
-};
-export default handler;
+}

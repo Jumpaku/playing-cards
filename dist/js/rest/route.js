@@ -11,12 +11,12 @@ import sendResponse from "./middleware/send_response";
 import parseRawBody from "./middleware/parse_raw_body";
 import { newErrorLogInfo } from "../lib/log/log_info";
 import parseJsonBody from "./middleware/parse_json_body";
-export function route(ctx, router, method, path, reqType, handler) {
+export function route(ctx, router, method, path, handler) {
     const wrappedHandler = async (req, res, next) => {
         const callCtx = req.ctx;
         requireNonNull(callCtx);
         // Validate request args
-        const [args, typeErr] = validateType(reqType, {
+        const [args, typeErr] = validateType(handler.requestType, {
             ...req.body,
             ...req.query,
             ...req.params,
@@ -26,7 +26,7 @@ export function route(ctx, router, method, path, reqType, handler) {
         }
         try {
             // Invoke handler with args
-            const [result, apiErr] = await handler(callCtx, args);
+            const [result, apiErr] = await handler.handle(callCtx, args);
             if (apiErr != null) {
                 return next(apiErr);
             }

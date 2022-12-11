@@ -14,22 +14,24 @@ export const Res = typing.type({
     create_time: typing.string,
     update_time: typing.string,
 });
-export const handler = async (ctx, req) => {
-    const e = examples.get(req.example_id);
-    if (e == null) {
-        return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
-    }
-    return [
-        {
-            example_id: req.example_id,
-            value: {
-                str: e.value_str,
-                num: e.value_num,
+export default class {
+    requestType = Req;
+    async handle(ctx, req) {
+        const e = examples.get(req.example_id);
+        if (e == null) {
+            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+        }
+        return [
+            {
+                example_id: req.example_id,
+                value: {
+                    str: e.value_str,
+                    num: e.value_num,
+                },
+                create_time: e.createTime.toISOString(),
+                update_time: e.updateTime.toISOString(),
             },
-            create_time: e.createTime.toISOString(),
-            update_time: e.updateTime.toISOString(),
-        },
-        null,
-    ];
-};
-export default handler;
+            null,
+        ];
+    }
+}
