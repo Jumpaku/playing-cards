@@ -13,9 +13,9 @@ import { validateType } from "../lib/typing";
 import sendResponse from "./middleware/send_response";
 import { AppContext } from "../app/context";
 import parseRawBody from "./middleware/parse_raw_body";
-import { newErrLogInfo } from "../lib/log/log_info";
 import parseJsonBody from "./middleware/parse_json_body";
 import { newApiCallInfo } from "./api_log";
+import { newErrLogInfo } from "../lib/log/err_log_info";
 
 export type Handler<Req, Res> = (
   ctx: CallContext,

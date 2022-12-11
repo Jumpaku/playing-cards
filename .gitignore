@@ -67,3 +67,6 @@ typings/
 
 # docker image cache
 gha-image-cache
+
+# log file
+log/*.log

@@ -1,6 +1,7 @@
 import { stringify } from "../strings";
+import { ErrLogInfo } from "./err_log_info";
 import { Logger } from "./logger";
-import { ErrLogInfo, LogInfo } from "./log_info";
+import { LogInfo } from "./log_info";
 
 const defaultConsole = console;
 

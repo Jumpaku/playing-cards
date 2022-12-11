@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('crypto'), require('dotenv'), require('io-ts'), require('process'), require('express')) :
-    typeof define === 'function' && define.amd ? define(['crypto', 'dotenv', 'io-ts', 'process', 'express'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.crypto, global.dotenv, global.typing, global.process, global.express));
-})(this, (function (crypto, dotenv, typing, process, express) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('crypto'), require('dotenv'), require('io-ts'), require('process'), require('express'), require('fs/promises')) :
+    typeof define === 'function' && define.amd ? define(['crypto', 'dotenv', 'io-ts', 'process', 'express', 'fs/promises'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.crypto, global.dotenv, global.typing, global.process, global.express, global.fp));
+})(this, (function (crypto, dotenv, typing, process, express, fp) { 'use strict';
 
     class IncrementIdGen {
         current;
@@ -343,17 +343,6 @@
         },
     });
 
-    function newErrorLogInfo(err) {
-        const wrapped = wrapErr(err);
-        return {
-            name: "error_log",
-            logTime: new Date(),
-            err_name: wrapped.name,
-            err_messages: wrapped.chainMessage(),
-            err_stack: wrapped.stack ?? "",
-        };
-    }
-
     function parseJsonBody(req, res, next) {
         try {
             const raw = req.rawBody ?? "";
@@ -374,6 +363,17 @@
             request: req,
         };
         return Object.assign(info, err != null ? { errorResponse: err.asResponse() } : { response: res });
+    }
+
+    function newErrLogInfo(err) {
+        const wrapped = wrapErr(err);
+        return {
+            name: "error_log",
+            logTime: new Date(),
+            err_name: wrapped.name,
+            err_messages: wrapped.chainMessage(),
+            err_stack: wrapped.stack ?? "",
+        };
     }
 
     function route(ctx, router, method, path, reqType, handler) {
@@ -401,7 +401,7 @@
             }
             catch (err) {
                 // Handle error when await failed
-                ctx.log.error(newErrorLogInfo(err));
+                ctx.log.error(newErrLogInfo(err));
                 return next(wrapApiErr(err));
             }
             next();
@@ -591,18 +591,23 @@
     }
 
     const defaultConsole = console;
-    class ConsoleLogger {
+    class FileLogger {
+        logDir;
         console;
-        constructor(console = defaultConsole) {
+        constructor(logDir = "log", console = defaultConsole) {
+            this.logDir = logDir;
             this.console = console;
         }
         info(logInfo) {
+            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
             this.console.log(stringify(logInfo));
         }
         warn(logInfo) {
+            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
             this.console.warn(stringify(logInfo));
         }
         error(logInfo) {
+            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
             this.console.error(stringify(logInfo));
         }
     }
@@ -617,7 +622,7 @@
         const ctx = {
             env,
             idGen: new CryptoIdGen(),
-            log: new ConsoleLogger(),
+            log: new FileLogger("log", console),
         };
         showIds();
         server(ctx, (app) => {

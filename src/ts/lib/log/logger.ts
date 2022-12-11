@@ -1,4 +1,5 @@
-import { ErrLogInfo, LogInfo } from "./log_info";
+import { ErrLogInfo } from "./err_log_info";
+import { LogInfo } from "./log_info";
 
 export interface Logger<I extends LogInfo = LogInfo> {
   /**

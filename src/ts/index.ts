@@ -4,7 +4,7 @@ import { newEnv } from "./app/env";
 import { panic, InitErr } from "./lib/errors";
 import { api_route } from "./rest/api/gen/api_route";
 import { server } from "./rest/server";
-import { ConsoleLogger } from "./lib/log/console_logger";
+import { FileLogger } from "./lib/log/file_logger";
 
 function main() {
   console.log("hello");
@@ -16,7 +16,7 @@ function main() {
   const ctx: AppContext = {
     env,
     idGen: new CryptoIdGen(),
-    log: new ConsoleLogger(),
+    log: new FileLogger("log", console),
   };
   showIds();
   server(ctx, (app) => {
