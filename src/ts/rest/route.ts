@@ -1,4 +1,4 @@
-import { json, NextFunction, Router } from "express";
+import { NextFunction, Router } from "express";
 import typing from "io-ts";
 import { requireNonNull, Result } from "../lib/errors";
 import { ApiErr, wrapApiErr } from "./api_err";
@@ -12,8 +12,9 @@ import endCall from "./middleware/end_call";
 import { validateType } from "../lib/typing";
 import sendResponse from "./middleware/send_response";
 import { AppContext } from "../app/context";
-import catchParseJsonErr from "./middleware/parse_json_body";
 import parseRawBody from "./middleware/parse_raw_body";
+import { newErrorLogInfo } from "../lib/log/log_info";
+import parseJsonBody from "./middleware/parse_json_body";
 
 export type Handler<Req, Res> = (
   ctx: CallContext,
@@ -22,7 +23,7 @@ export type Handler<Req, Res> = (
 
 export function route<Req, Res>(
   ctx: AppContext,
-  app: Router,
+  router: Router,
   method: typeof methods[number],
   path: string,
   reqType: typing.Type<Req>,
@@ -55,24 +56,24 @@ export function route<Req, Res>(
       res.body = result;
     } catch (err) {
       // Handle error when await failed
+      callCtx.app.log.error(newErrorLogInfo(err));
       return next(wrapApiErr(err));
     }
     next();
   };
 
-  app[method](path, [
+  router[method](path, [
     parseRawBody,
-    logRequest,
-    json({ strict: true, inflate: false }),
-    catchParseJsonErr,
+    logRequest(ctx),
+    parseJsonBody,
 
     wrappedHandler,
     sendResponse,
 
-    logApiErr(),
+    logApiErr(ctx),
     sendErrResponse,
 
-    logResponse,
+    logResponse(ctx),
     endCall,
   ]);
 }

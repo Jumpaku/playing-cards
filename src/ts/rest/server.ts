@@ -13,7 +13,7 @@ export function server(ctx: AppContext, routing: (router: Router) => void) {
   const router = express.Router();
   router.use(prepareCallContext(ctx));
   routing(router);
-  routeDefault(router);
+  routeDefault(ctx, router);
 
   const app = express();
   app.use(router);
@@ -22,7 +22,7 @@ export function server(ctx: AppContext, routing: (router: Router) => void) {
   });
 }
 
-function routeDefault(router: Router): Router {
+function routeDefault(ctx: AppContext, router: Router): Router {
   const throwApiNotFound = (
     req: Request,
     res: Response,
@@ -32,11 +32,11 @@ function routeDefault(router: Router): Router {
   };
   router.use([
     parseRawBody,
-    logRequest,
+    logRequest(ctx),
     throwApiNotFound,
-    logApiErr(),
+    logApiErr(ctx),
     sendErrResponse,
-    logResponse,
+    logResponse(ctx),
   ]);
   return router;
 }

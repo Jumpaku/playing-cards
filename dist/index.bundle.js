@@ -259,38 +259,39 @@
             : new ApiErr("Unexpected Error", { statusCode: status.InternalServerError }, wrapErr(err));
     }
 
-    function logRequest(req, res, next) {
-        const callCtx = req.ctx;
-        requireNonNull(callCtx);
-        const reqInfo = {
-            name: "request_log",
-            timestamp: new Date(Date.now()),
-            callId: callCtx.callId,
-            method: req.method.toLowerCase(),
-            url: req.url,
-            headers: req.headers,
-            rawBody: req.rawBody,
-            params: req.params,
-            query: req.query,
+    function logRequest(ctx) {
+        return (req, res, next) => {
+            const callCtx = req.ctx;
+            requireNonNull(callCtx);
+            const reqInfo = {
+                name: "request_log",
+                timestamp: new Date(),
+                callId: callCtx.callId,
+                method: req.method.toLowerCase(),
+                url: req.url,
+                headers: req.headers,
+                rawBody: req.rawBody,
+                params: req.params,
+                query: req.query,
+            };
+            ctx.log.info(reqInfo);
+            next();
         };
-        callCtx.app.log.info(reqInfo);
-        next();
     }
 
-    function logApiErr(cerr = console.error.bind(console)) {
+    function logApiErr(ctx) {
         return (err, req, res, next) => {
             const callCtx = req.ctx;
             requireNonNull(callCtx);
             const apiErr = wrapApiErr(err);
             const errInfo = {
                 name: "api_err_log",
-                timestamp: new Date(Date.now()),
+                timestamp: new Date(),
                 callId: callCtx.callId,
                 info: apiErr.getInfo(),
                 message: apiErr.chainMessage(),
             };
-            callCtx.app.log.warn(errInfo);
-            apiErr.print(cerr);
+            ctx.log.info(errInfo);
             next(apiErr);
         };
     }
@@ -307,19 +308,21 @@
         next();
     }
 
-    function logResponse(req, res, next) {
-        const callCtx = req.ctx;
-        requireNonNull(callCtx);
-        const resInfo = {
-            name: "response_log",
-            timestamp: new Date(Date.now()),
-            callId: callCtx.callId,
-            status: res.statusCode,
-            headers: res.getHeaders(),
-            body: res.body,
+    function logResponse(ctx) {
+        return (req, res, next) => {
+            const callCtx = req.ctx;
+            requireNonNull(callCtx);
+            const resInfo = {
+                name: "response_log",
+                timestamp: new Date(),
+                callId: callCtx.callId,
+                status: res.statusCode,
+                headers: res.getHeaders(),
+                body: res.body,
+            };
+            ctx.log.info(resInfo);
+            next();
         };
-        callCtx.app.log.info(resInfo);
-        next();
     }
 
     function endCall(req, res, next) {
@@ -329,6 +332,24 @@
     function sendResponse(req, res, next) {
         res.status(status.Ok).json(res.body ?? {});
         next();
+    }
+
+    const parseRawBody = express.raw({
+        type: "*/*",
+        verify: (req, res, buf) => {
+            req.rawBody = buf.toString();
+        },
+    });
+
+    function newErrorLogInfo(err) {
+        const wrapped = wrapErr(err);
+        return {
+            name: "error_log",
+            timestamp: new Date(),
+            err_name: wrapped.name,
+            err_messages: wrapped.chainMessage(),
+            err_stack: wrapped.stack ?? "",
+        };
     }
 
     function parseJsonBody(req, res, next) {
@@ -342,14 +363,7 @@
         }
     }
 
-    const parseRawBody = express.raw({
-        type: "*/*",
-        verify: (req, res, buf) => {
-            req.rawBody = buf.toString();
-        },
-    });
-
-    function route(ctx, app, method, path, reqType, handler) {
+    function route(ctx, router, method, path, reqType, handler) {
         const wrappedHandler = async (req, res, next) => {
             const callCtx = req.ctx;
             requireNonNull(callCtx);
@@ -372,20 +386,20 @@
             }
             catch (err) {
                 // Handle error when await failed
+                callCtx.app.log.error(newErrorLogInfo(err));
                 return next(wrapApiErr(err));
             }
             next();
         };
-        app[method](path, [
+        router[method](path, [
             parseRawBody,
-            logRequest,
-            express.json({ strict: true, inflate: false }),
+            logRequest(ctx),
             parseJsonBody,
             wrappedHandler,
             sendResponse,
-            logApiErr(),
+            logApiErr(ctx),
             sendErrResponse,
-            logResponse,
+            logResponse(ctx),
             endCall,
         ]);
     }
@@ -539,37 +553,42 @@
         const router = express.Router();
         router.use(prepareCallContext(ctx));
         routing(router);
-        routeDefault(router);
+        routeDefault(ctx, router);
         const app = express();
         app.use(router);
         app.listen(ctx.env.APP_PORT, () => {
             console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
         });
     }
-    function routeDefault(router) {
+    function routeDefault(ctx, router) {
         const throwApiNotFound = (req, res, next) => {
             next(new ApiErr("API not found", { statusCode: status.NotFound }));
         };
         router.use([
             parseRawBody,
-            logRequest,
+            logRequest(ctx),
             throwApiNotFound,
-            logApiErr(),
+            logApiErr(ctx),
             sendErrResponse,
-            logResponse,
+            logResponse(ctx),
         ]);
         return router;
     }
 
+    const defaultConsole = console;
     class ConsoleLogger {
+        console;
+        constructor(console = defaultConsole) {
+            this.console = console;
+        }
         info(logInfo) {
-            console.log(stringify(logInfo));
+            this.console.log(stringify(logInfo));
         }
         warn(logInfo) {
-            console.error(stringify(logInfo));
+            this.console.warn(stringify(logInfo));
         }
         error(logInfo) {
-            console.error(stringify(logInfo));
+            this.console.error(stringify(logInfo));
         }
     }
 

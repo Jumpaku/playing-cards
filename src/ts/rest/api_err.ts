@@ -1,5 +1,6 @@
 import { Err, wrapErr } from "../lib/errors";
 import { status, Status } from "./utils";
+
 export type ApiErrInfo = {
   statusCode: Status[keyof Status];
 };

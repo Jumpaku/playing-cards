@@ -1,12 +1,17 @@
 import { stringify } from "../strings";
+const defaultConsole = console;
 export class ConsoleLogger {
+    console;
+    constructor(console = defaultConsole) {
+        this.console = console;
+    }
     info(logInfo) {
-        console.log(stringify(logInfo));
+        this.console.log(stringify(logInfo));
     }
     warn(logInfo) {
-        console.error(stringify(logInfo));
+        this.console.warn(stringify(logInfo));
     }
     error(logInfo) {
-        console.error(stringify(logInfo));
+        this.console.error(stringify(logInfo));
     }
 }

@@ -11,24 +11,24 @@ export function server(ctx, routing) {
     const router = express.Router();
     router.use(prepareCallContext(ctx));
     routing(router);
-    routeDefault(router);
+    routeDefault(ctx, router);
     const app = express();
     app.use(router);
     app.listen(ctx.env.APP_PORT, () => {
         console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
     });
 }
-function routeDefault(router) {
+function routeDefault(ctx, router) {
     const throwApiNotFound = (req, res, next) => {
         next(new ApiErr("API not found", { statusCode: status.NotFound }));
     };
     router.use([
         parseRawBody,
-        logRequest,
+        logRequest(ctx),
         throwApiNotFound,
-        logApiErr(),
+        logApiErr(ctx),
         sendErrResponse,
-        logResponse,
+        logResponse(ctx),
     ]);
     return router;
 }

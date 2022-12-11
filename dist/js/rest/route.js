@@ -1,4 +1,3 @@
-import { json } from "express";
 import { requireNonNull } from "../lib/errors";
 import { ApiErr, wrapApiErr } from "./api_err";
 import { status } from "./utils";
@@ -9,9 +8,10 @@ import logResponse from "./middleware/log_response";
 import endCall from "./middleware/end_call";
 import { validateType } from "../lib/typing";
 import sendResponse from "./middleware/send_response";
-import catchParseJsonErr from "./middleware/parse_json_body";
 import parseRawBody from "./middleware/parse_raw_body";
-export function route(ctx, app, method, path, reqType, handler) {
+import { newErrorLogInfo } from "../lib/log/log_info";
+import parseJsonBody from "./middleware/parse_json_body";
+export function route(ctx, router, method, path, reqType, handler) {
     const wrappedHandler = async (req, res, next) => {
         const callCtx = req.ctx;
         requireNonNull(callCtx);
@@ -34,20 +34,20 @@ export function route(ctx, app, method, path, reqType, handler) {
         }
         catch (err) {
             // Handle error when await failed
+            callCtx.app.log.error(newErrorLogInfo(err));
             return next(wrapApiErr(err));
         }
         next();
     };
-    app[method](path, [
+    router[method](path, [
         parseRawBody,
-        logRequest,
-        json({ strict: true, inflate: false }),
-        catchParseJsonErr,
+        logRequest(ctx),
+        parseJsonBody,
         wrappedHandler,
         sendResponse,
-        logApiErr(),
+        logApiErr(ctx),
         sendErrResponse,
-        logResponse,
+        logResponse(ctx),
         endCall,
     ]);
 }
