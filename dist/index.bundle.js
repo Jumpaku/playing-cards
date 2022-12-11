@@ -182,6 +182,7 @@
     const Env = typing.type({
         APP_STAGE: typing.string,
         APP_PORT: typing.string,
+        LOG_PATH: typing.string,
     });
     function newEnv(path) {
         const env = dotenv.config({ path });
@@ -622,7 +623,7 @@
         const ctx = {
             env,
             idGen: new CryptoIdGen(),
-            log: new FileLogger("log", console),
+            log: new FileLogger(env.LOG_PATH, console),
         };
         showIds();
         server(ctx, (app) => {

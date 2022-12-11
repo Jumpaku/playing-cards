@@ -5,6 +5,7 @@ import { validateType } from "../lib/typing";
 export const Env = types.type({
     APP_STAGE: types.string,
     APP_PORT: types.string,
+    LOG_PATH: types.string,
 });
 export function newEnv(path) {
     const env = dotenv.config({ path });

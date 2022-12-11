@@ -14,7 +14,7 @@ function main() {
     const ctx = {
         env,
         idGen: new CryptoIdGen(),
-        log: new FileLogger("log", console),
+        log: new FileLogger(env.LOG_PATH, console),
     };
     showIds();
     server(ctx, (app) => {
