@@ -1,8 +1,10 @@
-import { AppContext } from "./context";
-import { newEnv } from "./env";
-import { panic, InitErr } from "./errors";
-import { CryptoIdGen, IncrementIdGen } from "./random/id_gen";
+import { CryptoIdGen, IncrementIdGen } from "./lib/id_gen";
+import { AppContext } from "./app/context";
+import { newEnv } from "./app/env";
+import { panic, InitErr } from "./lib/errors";
+import { api_route } from "./rest/api/gen/api_route";
 import { server } from "./rest/server";
+
 function main() {
   console.log("hello");
   const [env, err] = newEnv(".env");
@@ -15,7 +17,9 @@ function main() {
     idGen: new CryptoIdGen(),
   };
   showIds();
-  server(ctx, () => {});
+  server(ctx, (app) => {
+    api_route(ctx, app);
+  });
 }
 function showIds() {
   const idGen0 = new CryptoIdGen();

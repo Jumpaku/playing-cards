@@ -1,5 +1,5 @@
 import { NextFunction } from "express";
-import { wrapErr } from "../../errors";
+import { wrapErr } from "../../lib/errors";
 import { ApiErr } from "../api_err";
 import { Request, Response, status } from "../utils";
 
