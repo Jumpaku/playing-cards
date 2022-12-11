@@ -19,7 +19,7 @@ https://github.com/Jumpaku/playing-cards/blob/main/.env.default
 
 ```sh
 docker compose up -d
-docker compose exec dev bash -c 'npm install'
+docker compose exec dev bash -c 'make init'
 ```
 
 ### ビルド
