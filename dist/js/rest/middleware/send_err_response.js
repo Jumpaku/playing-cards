@@ -1,12 +1,12 @@
-import { ApiErr } from "../api_err";
+import { wrapApiErr } from "../api_err";
 export default function sendErrResponse(err, req, res, next) {
-    if (err instanceof ApiErr) {
-        const info = err.getInfo();
-        res.status(info.statusCode).json({
-            name: err.name,
-            message: err.message,
-            info: info,
-        });
-    }
+    const apiErr = wrapApiErr(err);
+    const info = apiErr.getInfo();
+    res.body = {
+        name: apiErr.name,
+        message: apiErr.message,
+        info: info,
+    };
+    res.status(info.statusCode).json(res.body);
     next();
 }

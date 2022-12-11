@@ -1,13 +1,12 @@
 import express from "express";
-import { text } from "body-parser";
 import prepareCallContext from "./middleware/prepare_call_context";
 import sendErrResponse from "./middleware/send_err_response";
-import catchUnexpectedErr from "./middleware/catch_unexpected_err";
 import logResponse from "./middleware/log_response";
 import logApiErr from "./middleware/log_api_err";
 import { ApiErr } from "./api_err";
 import { status } from "./utils";
 import logRequest from "./middleware/log_request";
+import parseRawBody from "./middleware/parse_raw_body";
 export function server(ctx, routing) {
     const router = express.Router();
     router.use(prepareCallContext(ctx));
@@ -20,14 +19,16 @@ export function server(ctx, routing) {
     });
 }
 function routeDefault(router) {
-    router.use(text({ defaultCharset: "utf8" }));
-    router.use(logRequest());
-    router.use((req, res, next) => {
+    const throwApiNotFound = (req, res, next) => {
         next(new ApiErr("API not found", { statusCode: status.NotFound }));
-    });
-    router.use(catchUnexpectedErr);
-    router.use(logApiErr());
-    router.use(sendErrResponse);
-    router.use(logResponse());
+    };
+    router.use([
+        parseRawBody,
+        logRequest,
+        throwApiNotFound,
+        logApiErr(),
+        sendErrResponse,
+        logResponse,
+    ]);
     return router;
 }

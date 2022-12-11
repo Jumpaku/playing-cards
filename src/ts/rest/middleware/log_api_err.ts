@@ -1,7 +1,7 @@
 import { NextFunction } from "express";
 import { requireNonNull } from "../../lib/errors";
 import { LogInfo } from "../../lib/log/log_info";
-import { ApiErr } from "../api_err";
+import { wrapApiErr } from "../api_err";
 import { Request, Response } from "../utils";
 
 export type ErrorInfo = LogInfo & {
@@ -11,21 +11,21 @@ export type ErrorInfo = LogInfo & {
   message: string;
 };
 export default function logApiErr(
-  cout: Console["log"] = console.log.bind(console),
   cerr: Console["error"] = console.error.bind(console)
 ) {
-  return (err: ApiErr, req: Request, res: Response, next: NextFunction) => {
+  return (err: unknown, req: Request, res: Response, next: NextFunction) => {
     const callCtx = req.ctx;
     requireNonNull(callCtx);
-    const resInfo: ErrorInfo = {
+    const apiErr = wrapApiErr(err);
+    const errInfo: ErrorInfo = {
       name: "api_err_log",
       timestamp: new Date(Date.now()),
       callId: callCtx.callId,
-      info: err.getInfo(),
-      message: err.chainMessage(),
+      info: apiErr.getInfo(),
+      message: apiErr.chainMessage(),
     };
-    cout(JSON.stringify(resInfo));
-    err.print(cerr);
-    next(err);
+    callCtx.app.log.warn(errInfo);
+    apiErr.print(cerr);
+    next(apiErr);
   };
 }
