@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('dotenv'), require('io-ts'), require('process'), require('express'), require('body-parser')) :
-    typeof define === 'function' && define.amd ? define(['dotenv', 'io-ts', 'process', 'express', 'body-parser'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.types, global.process, global.express, global.bodyParser));
-})(this, (function (dotenv, types, process, express, bodyParser) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('dotenv'), require('io-ts'), require('process'), require('crypto'), require('body-parser'), require('express')) :
+    typeof define === 'function' && define.amd ? define(['dotenv', 'io-ts', 'process', 'crypto', 'body-parser', 'express'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.typing, global.process, global.crypto, global.bodyParser, global.express));
+})(this, (function (dotenv, typing, process, crypto, bodyParser, express) { 'use strict';
 
     function defaultString(obj) {
         return obj === null
@@ -102,6 +102,11 @@
         }
         return new UnknownErr(new Error(`${defaultString(err)}`, { cause: err }));
     }
+    function requireNonNull(value, message) {
+        if (value == null) {
+            panic(message ?? `nonnull value is required`);
+        }
+    }
 
     class TypeErr extends Err {
         constructor(message, cause) {
@@ -118,9 +123,9 @@
         return [r.right, null];
     }
 
-    const Env = types.type({
-        APP_STAGE: types.string,
-        APP_PORT: types.string,
+    const Env = typing.type({
+        APP_STAGE: typing.string,
+        APP_PORT: typing.string,
     });
     function newEnv(path) {
         const env = dotenv.config({ path });
@@ -137,9 +142,24 @@
         return [val, null];
     }
 
+    class CryptoIdGen {
+        current;
+        constructor(current = crypto.randomUUID()) {
+            this.current = current;
+        }
+        value() {
+            return this.current;
+        }
+        next() {
+            const v = this.value();
+            this.current = crypto.randomUUID();
+            return v;
+        }
+    }
+
     class ApiErr extends Err {
         constructor(message, info, cause) {
-            super("AppErr", message, info, cause);
+            super("ApiErr", message, info, cause);
         }
     }
 
@@ -197,9 +217,48 @@
         next(new ApiErr("cannot parse json", { statusCode: status.BadRequest }, wrapErr(err)));
     }
 
-    function sendResponse(req, res, next) {
-        res.status(status.Ok).json(res.body);
-        next();
+    function logRequest(cout = console.log.bind(console)) {
+        return (req, res, next) => {
+            const callCtx = req.ctx;
+            requireNonNull(callCtx);
+            const reqInfo = {
+                name: "request_log",
+                timestamp: new Date(Date.now()),
+                callId: callCtx.callId,
+                method: req.method.toLowerCase(),
+                url: req.url,
+                headers: req.headers,
+                body: req.body,
+                params: req.params,
+                query: req.query,
+            };
+            cout(JSON.stringify(reqInfo));
+            next();
+        };
+    }
+
+    function catchUnexpectedErr(err, req, res, next) {
+        const apiErr = err instanceof ApiErr
+            ? err
+            : new ApiErr("Unexpected Error", { statusCode: status.InternalServerError }, wrapErr(err));
+        next(apiErr);
+    }
+
+    function logApiErr(cout = console.log.bind(console), cerr = console.error.bind(console)) {
+        return (err, req, res, next) => {
+            const callCtx = req.ctx;
+            requireNonNull(callCtx);
+            const resInfo = {
+                name: "api_err_log",
+                timestamp: new Date(Date.now()),
+                callId: callCtx.callId,
+                info: err.getInfo(),
+                message: err.chainMessage(),
+            };
+            cout(JSON.stringify(resInfo));
+            err.print(cerr);
+            next(err);
+        };
     }
 
     function sendErrResponse(err, req, res, next) {
@@ -214,17 +273,200 @@
         next();
     }
 
-    function catchUnexpectedErr(err, req, res, next) {
-        const apiErr = err instanceof ApiErr
-            ? err
-            : new ApiErr("Unexpected Error", { statusCode: status.InternalServerError }, wrapErr(err));
-        next(apiErr);
+    function logResponse(cout = console.log.bind(console)) {
+        return (req, res, next) => {
+            const callCtx = req.ctx;
+            requireNonNull(callCtx);
+            const resInfo = {
+                name: "response_log",
+                timestamp: new Date(Date.now()),
+                callId: callCtx.callId,
+                status: res.statusCode,
+                headers: res.getHeaders(),
+                body: res.body,
+            };
+            cout(JSON.stringify(resInfo));
+            next();
+        };
     }
 
-    function newRequestContext(app) {
+    function endCall(req, res, next) {
+        res.end();
+    }
+
+    function sendResponse(req, res, next) {
+        res.status(status.Ok).json(res.body ?? {});
+        next();
+    }
+
+    function route(ctx, app, method, path, reqType, handler) {
+        const wrappedHandler = async (req, res, next) => {
+            return (async () => {
+                const args = { ...req.body, ...req.query, ...req.params };
+                const [_, typeErr] = validateType(reqType, args);
+                if (typeErr != null) {
+                    return next(new ApiErr("Bad request", { statusCode: status.BadRequest }, typeErr));
+                }
+                const [result, apiErr] = await handler(req.ctx, args);
+                if (apiErr != null) {
+                    return next(apiErr);
+                }
+                res.body = result;
+                next();
+            })().catch(next);
+        };
+        app[method](path, [
+            bodyParser.json({ strict: true, inflate: false }),
+            catchParseJsonErr,
+            logRequest(),
+            wrappedHandler,
+            sendResponse,
+            catchUnexpectedErr,
+            logApiErr(),
+            sendErrResponse,
+            logResponse(),
+            endCall,
+        ]);
+    }
+
+    const examples = new Map();
+
+    const Req$4 = typing.type({});
+    typing.type({
+        list: typing.array(typing.type({
+            example_id: typing.string,
+            value: typing.type({
+                str: typing.string,
+                num: typing.number,
+            }),
+            create_time: typing.string,
+            update_time: typing.string,
+        })),
+    });
+    const handler$4 = async (ctx, req) => {
+        return [
+            {
+                list: [...examples.entries()].map(([k, v]) => ({
+                    example_id: k,
+                    value: { str: v.value_str, num: v.value_num },
+                    create_time: v.createTime.toISOString(),
+                    update_time: v.updateTime.toISOString(),
+                })),
+            },
+            null,
+        ];
+    };
+
+    const Req$3 = typing.type({
+        value: typing.type({
+            str: typing.string,
+            num: typing.number,
+        }),
+    });
+    typing.type({
+        example_id: typing.string,
+    });
+    const handler$3 = async (ctx, req) => {
+        const example = {
+            value_str: req.value.str,
+            value_num: req.value.num,
+            createTime: ctx.timestamp,
+            updateTime: ctx.timestamp,
+        };
+        const exampleId = ctx.app.idGen.next();
+        examples.set(exampleId, example);
+        return [{ example_id: exampleId }, null];
+    };
+
+    const Req$2 = typing.type({
+        example_id: typing.string,
+    });
+    typing.type({
+        example_id: typing.string,
+        value: typing.type({
+            str: typing.string,
+            num: typing.number,
+        }),
+        create_time: typing.string,
+        update_time: typing.string,
+    });
+    const handler$2 = async (ctx, req) => {
+        const e = examples.get(req.example_id);
+        if (e == null) {
+            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+        }
+        return [
+            {
+                example_id: req.example_id,
+                value: {
+                    str: e.value_str,
+                    num: e.value_num,
+                },
+                create_time: e.createTime.toISOString(),
+                update_time: e.updateTime.toISOString(),
+            },
+            null,
+        ];
+    };
+
+    const Req$1 = typing.type({
+        example_id: typing.string,
+        value: typing.union([
+            typing.undefined,
+            typing.type({
+                str: typing.union([typing.string, typing.undefined]),
+                num: typing.union([typing.number, typing.undefined]),
+            }),
+        ]),
+    });
+    typing.type({});
+    const handler$1 = async (ctx, req) => {
+        const oldExample = examples.get(req.example_id);
+        if (oldExample == null) {
+            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+        }
+        const newExample = { ...oldExample };
+        if (req.value == null) {
+            return [{}, null];
+        }
+        if (req.value.str != null) {
+            newExample.value_str = req.value.str;
+        }
+        if (req.value.num != null) {
+            newExample.value_num = req.value.num;
+        }
+        newExample.updateTime = ctx.timestamp;
+        examples.set(req.example_id, newExample);
+        return [{}, null];
+    };
+
+    const Req = typing.type({
+        example_id: typing.string,
+    });
+    typing.type({});
+    const handler = async (ctx, req) => {
+        const oldExample = examples.get(req.example_id);
+        if (oldExample == null) {
+            return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+        }
+        examples.delete(req.example_id);
+        return [{}, null];
+    };
+
+    function api_route(ctx, router) {
+        route(ctx, router, "get", "/example", Req$4, handler$4);
+        route(ctx, router, "post", "/example", Req$3, handler$3);
+        route(ctx, router, "get", "/example/:example_id", Req$2, handler$2);
+        route(ctx, router, "put", "/example/:example_id", Req$1, handler$1);
+        route(ctx, router, "delete", "/example/:example_id", Req, handler);
+        return router;
+    }
+
+    function prepareCallContext(app) {
         return (req, res, next) => {
             req.ctx = {
                 app: app,
+                callId: app.idGen.next(),
                 token: "",
                 timestamp: new Date(Date.now()),
             };
@@ -233,21 +475,27 @@
     }
 
     function server(ctx, routing) {
+        const router = express.Router();
+        router.use(prepareCallContext(ctx));
+        routing(router);
+        routeDefault(router);
         const app = express();
-        app.use(bodyParser.json({ strict: true, inflate: false }));
-        app.use(catchParseJsonErr);
-        app.use(newRequestContext);
-        routing(app);
-        /*
-         * App.use(path, validateJsonBody(Env));
-         * app[method](path, handler(Env));
-         */
-        app.use(sendResponse);
-        app.use(catchUnexpectedErr);
-        app.use(sendErrResponse);
+        app.use(router);
         app.listen(ctx.env.APP_PORT, () => {
             console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
         });
+    }
+    function routeDefault(router) {
+        router.use(bodyParser.text({ defaultCharset: "utf8" }));
+        router.use(logRequest());
+        router.use((req, res, next) => {
+            next(new ApiErr("API not found", { statusCode: status.NotFound }));
+        });
+        router.use(catchUnexpectedErr);
+        router.use(logApiErr());
+        router.use(sendErrResponse);
+        router.use(logResponse());
+        return router;
     }
 
     function main() {
@@ -259,8 +507,11 @@
         console.log(env);
         const ctx = {
             env,
+            idGen: new CryptoIdGen(),
         };
-        server(ctx, () => { });
+        server(ctx, (app) => {
+            api_route(ctx, app);
+        });
     }
     main();
 
