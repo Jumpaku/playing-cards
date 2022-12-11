@@ -370,7 +370,7 @@
             name: "api_call_log",
             logTime: new Date(),
             callId: ctx.callId,
-            callTime: ctx.timestamp,
+            callTime: ctx.callTime,
             request: req,
         };
         return Object.assign(info, err != null ? { errorResponse: err.asResponse() } : { response: res });
@@ -460,8 +460,8 @@
         const example = {
             value_str: req.value.str,
             value_num: req.value.num,
-            createTime: ctx.timestamp,
-            updateTime: ctx.timestamp,
+            createTime: ctx.callTime,
+            updateTime: ctx.callTime,
         };
         const exampleId = ctx.app.idGen.next();
         examples.set(exampleId, example);
@@ -525,7 +525,7 @@
         if (req.value.num != null) {
             newExample.value_num = req.value.num;
         }
-        newExample.updateTime = ctx.timestamp;
+        newExample.updateTime = ctx.callTime;
         examples.set(req.example_id, newExample);
         return [{}, null];
     };
@@ -557,8 +557,8 @@
             req.ctx = {
                 app: app,
                 callId: app.idGen.next(),
+                callTime: new Date(),
                 token: "",
-                timestamp: new Date(Date.now()),
             };
             next();
         };

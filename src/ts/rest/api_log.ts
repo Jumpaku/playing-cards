@@ -21,7 +21,7 @@ export function newApiCallInfo(
     name: "api_call_log",
     logTime: new Date(),
     callId: ctx.callId,
-    callTime: ctx.timestamp,
+    callTime: ctx.callTime,
     request: req,
   } as const;
   return Object.assign(

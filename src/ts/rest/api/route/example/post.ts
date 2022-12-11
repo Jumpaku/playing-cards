@@ -25,8 +25,8 @@ export const handler: Handler<Req, Res> = async (
   const example: Example = {
     value_str: req.value.str,
     value_num: req.value.num,
-    createTime: ctx.timestamp,
-    updateTime: ctx.timestamp,
+    createTime: ctx.callTime,
+    updateTime: ctx.callTime,
   };
   const exampleId = ctx.app.idGen.next();
   examples.set(exampleId, example);
