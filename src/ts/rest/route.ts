@@ -13,7 +13,7 @@ import { validateType } from "../lib/typing";
 import sendResponse from "./middleware/send_response";
 import { AppContext } from "../app/context";
 import parseRawBody from "./middleware/parse_raw_body";
-import { newErrorLogInfo } from "../lib/log/log_info";
+import { newErrLogInfo } from "../lib/log/log_info";
 import parseJsonBody from "./middleware/parse_json_body";
 import { newApiCallInfo } from "./api_log";
 
@@ -59,7 +59,7 @@ export function route<Req, Res>(
       res.body = resBody;
     } catch (err) {
       // Handle error when await failed
-      ctx.log.error(newErrorLogInfo(err));
+      ctx.log.error(newErrLogInfo(err));
       return next(wrapApiErr(err));
     }
     next();

@@ -12,7 +12,7 @@ export type ErrLogInfo = LogInfo & {
   err_stack: string;
 };
 
-export function newErrorLogInfo(err: unknown): ErrLogInfo {
+export function newErrLogInfo(err: unknown): ErrLogInfo {
   const wrapped = wrapErr(err);
   return {
     name: "error_log",
