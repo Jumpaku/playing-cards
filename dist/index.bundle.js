@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('dotenv'), require('io-ts'), require('process'), require('express'), require('body-parser')) :
-    typeof define === 'function' && define.amd ? define(['dotenv', 'io-ts', 'process', 'express', 'body-parser'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.types, global.process, global.express, global.bodyParser));
-})(this, (function (dotenv, types, process, express, bodyParser) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('dotenv'), require('io-ts'), require('process'), require('crypto'), require('express'), require('body-parser')) :
+    typeof define === 'function' && define.amd ? define(['dotenv', 'io-ts', 'process', 'crypto', 'express', 'body-parser'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.types, global.process, global.crypto, global.express, global.bodyParser));
+})(this, (function (dotenv, types, process, crypto, express, bodyParser) { 'use strict';
 
     function defaultString(obj) {
         return obj === null
@@ -137,6 +137,35 @@
         return [val, null];
     }
 
+    class IncrementIdGen {
+        current;
+        constructor(current) {
+            this.current = current;
+        }
+        value() {
+            return `id-${this.current}`;
+        }
+        next() {
+            const v = this.value();
+            this.current++;
+            return v;
+        }
+    }
+    class CryptoIdGen {
+        current;
+        constructor(current = crypto.randomUUID()) {
+            this.current = current;
+        }
+        value() {
+            return this.current;
+        }
+        next() {
+            const v = this.value();
+            this.current = crypto.randomUUID();
+            return v;
+        }
+    }
+
     class ApiErr extends Err {
         constructor(message, info, cause) {
             super("AppErr", message, info, cause);
@@ -259,8 +288,20 @@
         console.log(env);
         const ctx = {
             env,
+            idGen: new CryptoIdGen(),
         };
+        showIds();
         server(ctx, () => { });
+    }
+    function showIds() {
+        const idGen0 = new CryptoIdGen();
+        for (let i = 0; i < 10; i++) {
+            console.log(idGen0.next());
+        }
+        const idGen1 = new IncrementIdGen(1);
+        for (let i = 0; i < 10; i++) {
+            console.log(idGen1.next());
+        }
     }
     main();
 
