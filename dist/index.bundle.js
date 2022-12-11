@@ -4,9 +4,29 @@
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.types, global.process, global.express, global.bodyParser));
 })(this, (function (dotenv, types, process, express, bodyParser) { 'use strict';
 
-    class BaseError extends Error {
-        constructor(name, message, cause) {
-            super(message, { cause: cause });
+    function defaultString(obj) {
+        return obj === null
+            ? "null"
+            : typeof obj === "undefined"
+                ? "undefined"
+                : typeof obj === "string"
+                    ? obj
+                    : typeof obj === "number"
+                        ? `${obj}`
+                        : typeof obj === "bigint"
+                            ? `${obj}`
+                            : typeof obj === "boolean"
+                                ? `${obj ? "true" : "false"}`
+                                : typeof obj === "function"
+                                    ? `function ${obj.name === "" ? "<anonymous>" : obj.name}`
+                                    : `object ${obj.toString()}`;
+    }
+
+    class Err extends Error {
+        info;
+        constructor(name, message, info, cause) {
+            super(message, { cause });
+            this.info = info;
             this.name = name;
             Error.captureStackTrace(this);
         }
@@ -17,14 +37,15 @@
             printErrImpl(this, cerr);
         }
         getInfo() {
-            return {};
+            return this.info;
         }
     }
     function chainMessageImpl(err) {
-        if (err.cause instanceof Error) {
-            return [`${err.name}(${err.message})`, ...chainMessageImpl(err.cause)];
+        const cause = err.cause;
+        if (cause instanceof Error) {
+            return [`${err.name}(${err.message})`, ...chainMessageImpl(cause)];
         }
-        return [`${err.name}(${err.message})`, `${err.cause}`];
+        return [`${err.name}(${err.message})`, `${defaultString(cause)}`];
     }
     function printErrImpl(err, cerr) {
         cerr(err);
@@ -38,50 +59,53 @@
         printErrImpl(err.cause, cerr);
     }
 
-    class PanicError extends BaseError {
+    class PanicErr extends Err {
         constructor(message, cause) {
-            super("PanicError", message, cause);
+            super("PanicErr", message, {}, cause);
         }
     }
 
-    class UnknownError extends BaseError {
+    class UnknownErr extends Err {
         constructor(cause) {
-            super("UnknownError", cause != null ? "error is wrapped" : "", cause);
+            super("UnknownErr", cause != null ? "error is wrapped" : "", {}, cause);
         }
     }
 
-    class IoError extends BaseError {
+    class IoErr extends Err {
         constructor(message, cause) {
-            super("IoError", message, cause);
+            super("IoErr", message, {}, cause);
         }
     }
 
-    class InitError extends BaseError {
+    class InitErr extends Err {
         constructor(message, cause) {
-            super("InitError", message, cause);
+            super("InitErr", message, {}, cause);
         }
     }
 
+    function instanceOfErr(obj) {
+        return obj instanceof Err;
+    }
     function panic(cause) {
-        if (!(cause instanceof BaseError)) {
+        if (!(cause instanceof Err)) {
             panic(wrapErr(cause));
         }
-        console.error(new PanicError("Panic!", cause));
+        console.error(new PanicErr("Panic!", cause));
         process.exit(1);
     }
     function wrapErr(err) {
-        if (err instanceof BaseError) {
+        if (instanceOfErr(err)) {
             return err;
         }
         if (err instanceof Error) {
-            return new UnknownError(err);
+            return new UnknownErr(err);
         }
-        return new UnknownError(new Error(`${err}`, { cause: err }));
+        return new UnknownErr(new Error(`${defaultString(err)}`, { cause: err }));
     }
 
-    class TypeError extends BaseError {
+    class TypeErr extends Err {
         constructor(message, cause) {
-            super("TypeError", message, cause);
+            super("TypeErr", message, {}, cause);
         }
     }
     function validateType(type, obj) {
@@ -89,7 +113,7 @@
         if (r._tag === "Left")
             return [
                 null,
-                new TypeError("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
+                new TypeErr("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
             ];
         return [r.right, null];
     }
@@ -103,27 +127,19 @@
         if (env.error != null) {
             return [
                 null,
-                new IoError("fail to load environment variables", wrapErr(env.error)),
+                new IoErr("fail to load environment variables", wrapErr(env.error)),
             ];
         }
         const [val, err] = validateType(Env, env.parsed);
         if (err != null) {
-            return [null, new IoError(`invalid environment variables`, err)];
+            return [null, new IoErr(`invalid environment variables`, err)];
         }
         return [val, null];
     }
 
-    class ApiError extends BaseError {
-        info;
-        static wrap(info, err) {
-            return new ApiError(info, `wrap with status code ${info.statusCode}`, wrapErr(err));
-        }
-        constructor(info, message, cause) {
-            super("AppError", message, cause);
-            this.info = info;
-        }
-        getInfo() {
-            return this.info;
+    class ApiErr extends Err {
+        constructor(message, info, cause) {
+            super("AppErr", message, info, cause);
         }
     }
 
@@ -177,8 +193,8 @@
         NetworkAuthenticationRequired: 511,
     };
 
-    function catchParseJsonError(err, req, res, next) {
-        next(new ApiError({ statusCode: status.BadRequest }, "cannot parse json", wrapErr(err)));
+    function catchParseJsonErr(err, req, res, next) {
+        next(new ApiErr("cannot parse json", { statusCode: status.BadRequest }, wrapErr(err)));
     }
 
     function sendResponse(req, res, next) {
@@ -186,8 +202,8 @@
         next();
     }
 
-    function sendErrorResponse(err, req, res, next) {
-        if (err instanceof ApiError) {
+    function sendErrResponse(err, req, res, next) {
+        if (err instanceof ApiErr) {
             const info = err.getInfo();
             res.status(info.statusCode).json({
                 name: err.name,
@@ -198,10 +214,10 @@
         next();
     }
 
-    function catchUnexpectedError(err, req, res, next) {
-        const apiErr = err instanceof ApiError
+    function catchUnexpectedErr(err, req, res, next) {
+        const apiErr = err instanceof ApiErr
             ? err
-            : new ApiError({ statusCode: status.InternalServerError }, "Unexpected Error", wrapErr(err));
+            : new ApiErr("Unexpected Error", { statusCode: status.InternalServerError }, wrapErr(err));
         next(apiErr);
     }
 
@@ -219,14 +235,16 @@
     function server(ctx, routing) {
         const app = express();
         app.use(bodyParser.json({ strict: true, inflate: false }));
-        app.use(catchParseJsonError);
+        app.use(catchParseJsonErr);
         app.use(newRequestContext);
         routing(app);
-        //app.use(path, validateJsonBody(Env));
-        //app[method](path, handler(Env));
+        /*
+         * App.use(path, validateJsonBody(Env));
+         * app[method](path, handler(Env));
+         */
         app.use(sendResponse);
-        app.use(catchUnexpectedError);
-        app.use(sendErrorResponse);
+        app.use(catchUnexpectedErr);
+        app.use(sendErrResponse);
         app.listen(ctx.env.APP_PORT, () => {
             console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
         });
@@ -236,7 +254,7 @@
         console.log("hello");
         const [env, err] = newEnv(".env");
         if (err != null) {
-            panic(new InitError("fail loading env", err));
+            panic(new InitErr("fail loading env", err));
         }
         console.log(env);
         const ctx = {

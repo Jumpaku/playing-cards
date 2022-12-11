@@ -1,21 +1,23 @@
 import express from "express";
 import { json } from "body-parser";
-import catchParseJsonError from "./middleware/catchParseJsonError";
-import sendResponse from "./middleware/sendResponse";
-import sendErrorResponse from "./middleware/sendErrorResponse";
-import catchUnexpectedError from "./middleware/catchUnexpectedError";
-import newRequestContext from "./middleware/newRequestContext";
+import catchParseJsonErr from "./middleware/catch_parse_json_err";
+import sendResponse from "./middleware/send_response";
+import sendErrResponse from "./middleware/send_err_response";
+import catchUnexpectedErr from "./middleware/catch_unexpected_err";
+import newRequestContext from "./middleware/new_request_context";
 export function server(ctx, routing) {
     const app = express();
     app.use(json({ strict: true, inflate: false }));
-    app.use(catchParseJsonError);
+    app.use(catchParseJsonErr);
     app.use(newRequestContext);
     routing(app);
-    //app.use(path, validateJsonBody(Env));
-    //app[method](path, handler(Env));
+    /*
+     * App.use(path, validateJsonBody(Env));
+     * app[method](path, handler(Env));
+     */
     app.use(sendResponse);
-    app.use(catchUnexpectedError);
-    app.use(sendErrorResponse);
+    app.use(catchUnexpectedErr);
+    app.use(sendErrResponse);
     app.listen(ctx.env.APP_PORT, () => {
         console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
     });

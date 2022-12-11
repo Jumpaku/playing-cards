@@ -1,24 +1,29 @@
 import { exit } from "process";
-import { BaseError } from "./BaseError";
-import { PanicError } from "./PanicError";
-import { UnknownError } from "./UnknownError";
+import { defaultString } from "../strings";
+import { Err } from "./base_err";
+import { PanicErr } from "./panic_err";
+import { UnknownErr } from "./unknown_err";
 
-export function panic(cause: BaseError): never;
-export function panic(cause: unknown): never;
-export function panic(cause: unknown): never {
-  if (!(cause instanceof BaseError)) {
+export type Result<V, E extends Err> = [V, null] | [null, E];
+
+export function instanceOfErr(obj: unknown): obj is Err {
+  return obj instanceof Err;
+}
+
+export function panic(cause: Err | unknown): never {
+  if (!(cause instanceof Err)) {
     panic(wrapErr(cause));
   }
-  console.error(new PanicError("Panic!", cause));
+  console.error(new PanicErr("Panic!", cause));
   exit(1);
 }
 
-export function wrapErr(err: unknown): BaseError {
-  if (err instanceof BaseError) {
+export function wrapErr(err: unknown): Err {
+  if (instanceOfErr(err)) {
     return err;
   }
   if (err instanceof Error) {
-    return new UnknownError(err);
+    return new UnknownErr(err);
   }
-  return new UnknownError(new Error(`${err}`, { cause: err }));
+  return new UnknownErr(new Error(`${defaultString(err)}`, { cause: err }));
 }

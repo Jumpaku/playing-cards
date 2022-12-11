@@ -1,10 +1,8 @@
 import { NextFunction } from "express";
 import typing from "io-ts";
 import { validateType } from "../../typing";
-import { ApiError } from "../ApiError";
-import { Request } from "../Request";
-import { Response } from "../Response";
-import { status } from "../status";
+import { ApiErr } from "../api_err";
+import { Request, Response, status } from "../utils";
 
 export default function validateJsonBody<JsonBody>(
   reqType: typing.Type<JsonBody>
@@ -17,7 +15,7 @@ export default function validateJsonBody<JsonBody>(
     });
     if (typeErr != null) {
       return next(
-        new ApiError({ statusCode: status.BadRequest }, "Bad request", typeErr)
+        new ApiErr("Bad request", { statusCode: status.BadRequest }, typeErr)
       );
     }
     next();

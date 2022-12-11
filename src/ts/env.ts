@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import types from "io-ts";
-import { Result, wrapErr, IoError } from "./errors";
+import { Result, wrapErr, IoErr } from "./errors";
 import { validateType } from "./typing";
 
 export const Env = types.type({
@@ -10,17 +10,17 @@ export const Env = types.type({
 
 export type Env = types.TypeOf<typeof Env>;
 
-export function newEnv(path: string): Result<Env, IoError> {
+export function newEnv(path: string): Result<Env, IoErr> {
   const env = dotenv.config({ path });
   if (env.error != null) {
     return [
       null,
-      new IoError("fail to load environment variables", wrapErr(env.error)),
+      new IoErr("fail to load environment variables", wrapErr(env.error)),
     ];
   }
   const [val, err] = validateType(Env, env.parsed);
   if (err != null) {
-    return [null, new IoError(`invalid environment variables`, err)];
+    return [null, new IoErr(`invalid environment variables`, err)];
   }
   return [val, null];
 }

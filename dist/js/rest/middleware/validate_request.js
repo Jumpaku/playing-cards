@@ -1,6 +1,6 @@
 import { validateType } from "../../typing";
-import { ApiError } from "../ApiError";
-import { status } from "../status";
+import { ApiErr } from "../api_err";
+import { status } from "../utils";
 export default function validateJsonBody(reqType) {
     return (req, res, next) => {
         const [_, typeErr] = validateType(reqType, {
@@ -9,7 +9,7 @@ export default function validateJsonBody(reqType) {
             ...req.params,
         });
         if (typeErr != null) {
-            return next(new ApiError({ statusCode: status.BadRequest }, "Bad request", typeErr));
+            return next(new ApiErr("Bad request", { statusCode: status.BadRequest }, typeErr));
         }
         next();
     };

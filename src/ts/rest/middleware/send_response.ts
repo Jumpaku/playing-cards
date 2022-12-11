@@ -1,7 +1,5 @@
 import { NextFunction } from "express";
-import { Request } from "../Request";
-import { Response } from "../Response";
-import { status } from "../status";
+import { Request, Response, status } from "../utils";
 
 export default function sendResponse(
   req: Request,

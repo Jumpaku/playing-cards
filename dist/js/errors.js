@@ -1,6 +1,6 @@
-export { BaseError } from "./errors/BaseError";
-export { PanicError } from "./errors/PanicError";
-export { UnknownError } from "./errors/UnknownError";
-export { IoError } from "./errors/IoError";
-export { InitError } from "./errors/InitError";
+export { Err } from "./errors/base_err";
+export { PanicErr } from "./errors/panic_err";
+export { UnknownErr } from "./errors/unknown_err";
+export { IoErr } from "./errors/io_err";
+export { InitErr } from "./errors/init_err";
 export { panic, wrapErr } from "./errors/utils";

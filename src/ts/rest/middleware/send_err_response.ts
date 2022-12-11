@@ -1,15 +1,14 @@
 import { NextFunction } from "express";
-import { ApiError } from "../ApiError";
-import { Request } from "../Request";
-import { Response } from "../Response";
+import { ApiErr } from "../api_err";
+import { Request, Response } from "../utils";
 
-export default function sendErrorResponse(
+export default function sendErrResponse(
   err: unknown,
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  if (err instanceof ApiError) {
+  if (err instanceof ApiErr) {
     const info = err.getInfo();
     res.status(info.statusCode).json({
       name: err.name,

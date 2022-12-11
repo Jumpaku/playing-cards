@@ -1,18 +1,17 @@
 import { Application, NextFunction } from "express";
-import { Result } from "../../errors/Result";
-import { ApiError } from "../ApiError";
-import { httpMethods } from "../methods";
-import { Request } from "../Request";
-import { RequestContext } from "../RequestContext";
-import { Response } from "../Response";
+import { Result } from "../../errors";
+import { ApiErr } from "../api_err";
+import { RequestContext } from "../request_context";
+import { methods, Request, Response } from "../utils";
+
 export type Handler<Req, Res> = (
   ctx: RequestContext,
   req: Req
-) => Promise<Result<Res, ApiError>>;
+) => Promise<Result<Res, ApiErr>>;
 
 export function route<Req, Res>(
   app: Application,
-  method: typeof httpMethods[number],
+  method: typeof methods[number],
   path: string,
   handler: Handler<Req, Res>
 ) {

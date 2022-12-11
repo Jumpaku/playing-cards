@@ -1,20 +1,24 @@
 import { exit } from "process";
-import { BaseError } from "./BaseError";
-import { PanicError } from "./PanicError";
-import { UnknownError } from "./UnknownError";
+import { defaultString } from "../strings";
+import { Err } from "./base_err";
+import { PanicErr } from "./panic_err";
+import { UnknownErr } from "./unknown_err";
+export function instanceOfErr(obj) {
+    return obj instanceof Err;
+}
 export function panic(cause) {
-    if (!(cause instanceof BaseError)) {
+    if (!(cause instanceof Err)) {
         panic(wrapErr(cause));
     }
-    console.error(new PanicError("Panic!", cause));
+    console.error(new PanicErr("Panic!", cause));
     exit(1);
 }
 export function wrapErr(err) {
-    if (err instanceof BaseError) {
+    if (instanceOfErr(err)) {
         return err;
     }
     if (err instanceof Error) {
-        return new UnknownError(err);
+        return new UnknownErr(err);
     }
-    return new UnknownError(new Error(`${err}`, { cause: err }));
+    return new UnknownErr(new Error(`${defaultString(err)}`, { cause: err }));
 }
