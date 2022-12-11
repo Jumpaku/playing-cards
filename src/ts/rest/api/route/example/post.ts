@@ -6,8 +6,10 @@ import { ApiErr } from "../../../api_err";
 import { Example, examples } from "../../../../model/example";
 
 export const Req = typing.type({
-  str_value: typing.string,
-  num_value: typing.number,
+  value: typing.type({
+    str: typing.string,
+    num: typing.number,
+  }),
 });
 export type Req = TypeOf<typeof Req>;
 
@@ -21,7 +23,8 @@ export const handler: Handler<Req, Res> = async (
   req: Req
 ): Promise<Result<Res, ApiErr>> => {
   const example: Example = {
-    value: { str: req.str_value, num: req.num_value },
+    value_str: req.value.str,
+    value_num: req.value.num,
     createTime: ctx.timestamp,
     updateTime: ctx.timestamp,
   };

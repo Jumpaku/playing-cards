@@ -13,8 +13,10 @@ export type Req = TypeOf<typeof Req>;
 
 export const Res = typing.type({
   example_id: typing.string,
-  str_value: typing.string,
-  num_value: typing.number,
+  value: typing.type({
+    str: typing.string,
+    num: typing.number,
+  }),
   create_time: typing.string,
   update_time: typing.string,
 });
@@ -31,8 +33,10 @@ export const handler: Handler<Req, Res> = async (
   return [
     {
       example_id: req.example_id,
-      str_value: e.value.str,
-      num_value: e.value.num,
+      value: {
+        str: e.value_str,
+        num: e.value_num,
+      },
       create_time: e.createTime.toISOString(),
       update_time: e.updateTime.toISOString(),
     },

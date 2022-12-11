@@ -8,8 +8,13 @@ import { status } from "../../../../utils";
 
 export const Req = typing.type({
   example_id: typing.string,
-  str_value: typing.union([typing.string, typing.undefined]),
-  num_value: typing.union([typing.number, typing.undefined]),
+  value: typing.union([
+    typing.undefined,
+    typing.type({
+      str: typing.union([typing.string, typing.undefined]),
+      num: typing.union([typing.number, typing.undefined]),
+    }),
+  ]),
 });
 export type Req = TypeOf<typeof Req>;
 
@@ -24,12 +29,15 @@ export const handler: Handler<Req, Res> = async (
   if (oldExample == null) {
     return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
   }
-  const newExample: Example = { ...oldExample, value: { ...oldExample.value } };
-  if (req.str_value != null) {
-    newExample.value.str = req.str_value;
+  const newExample: Example = { ...oldExample };
+  if (req.value == null) {
+    return [{}, null];
   }
-  if (req.num_value != null) {
-    newExample.value.num = req.num_value;
+  if (req.value.str != null) {
+    newExample.value_str = req.value.str;
+  }
+  if (req.value.num != null) {
+    newExample.value_num = req.value.num;
   }
   newExample.updateTime = ctx.timestamp;
   examples.set(req.example_id, newExample);

@@ -12,8 +12,10 @@ export const Res = typing.type({
   list: typing.array(
     typing.type({
       example_id: typing.string,
-      str_value: typing.string,
-      num_value: typing.number,
+      value: typing.type({
+        str: typing.string,
+        num: typing.number,
+      }),
       create_time: typing.string,
       update_time: typing.string,
     })
@@ -29,8 +31,7 @@ export const handler: Handler<Req, Res> = async (
     {
       list: [...examples.entries()].map(([k, v]) => ({
         example_id: k,
-        str_value: v.value.str,
-        num_value: v.value.num,
+        value: { str: v.value_str, num: v.value_num },
         create_time: v.createTime.toISOString(),
         update_time: v.updateTime.toISOString(),
       })),

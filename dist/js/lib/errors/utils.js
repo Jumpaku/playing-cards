@@ -22,3 +22,8 @@ export function wrapErr(err) {
     }
     return new UnknownErr(new Error(`${defaultString(err)}`, { cause: err }));
 }
+export function requireNonNull(value, message) {
+    if (value == null) {
+        panic(message ?? `nonnull value is required`);
+    }
+}

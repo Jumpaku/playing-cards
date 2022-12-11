@@ -1,8 +1,6 @@
 export type Example = {
-  value: {
-    str: string;
-    num: number;
-  };
+  value_str: string;
+  value_num: number;
   createTime: Date;
   updateTime: Date;
 };

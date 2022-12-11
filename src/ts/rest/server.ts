@@ -1,31 +1,37 @@
-import express, { Application } from "express";
+import express, { Router } from "express";
 import { AppContext } from "../app/context";
-import { json } from "body-parser";
-import catchParseJsonErr from "./middleware/catch_parse_json_err";
-import sendResponse from "./middleware/send_response";
+import { text } from "body-parser";
+import prepareCallContext from "./middleware/prepare_call_context";
 import sendErrResponse from "./middleware/send_err_response";
 import catchUnexpectedErr from "./middleware/catch_unexpected_err";
-import prepareCallContext from "./middleware/prepare_call_context";
-import { api_route } from "./api/gen/api_route";
+import logResponse from "./middleware/log_response";
+import logApiErr from "./middleware/log_api_err";
+import { ApiErr } from "./api_err";
+import { status } from "./utils";
+import logRequest from "./middleware/log_request";
 
-export function server(ctx: AppContext, routing: (app: Application) => void) {
+export function server(ctx: AppContext, routing: (router: Router) => void) {
+  const router = express.Router();
+  router.use(prepareCallContext(ctx));
+  routing(router);
+  routeDefault(router);
+
   const app = express();
-
-  app.use(json({ strict: true, inflate: false }));
-  app.use(catchParseJsonErr);
-  app.use(prepareCallContext);
-  routing(app);
-
-  /*
-   * App.use(path, validateJsonBody(Env));
-   */
-  api_route(app);
-
-  app.use(sendResponse);
-  app.use(catchUnexpectedErr);
-  app.use(sendErrResponse);
-
+  app.use(router);
   app.listen(ctx.env.APP_PORT, () => {
     console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
   });
+}
+
+function routeDefault(router: Router): Router {
+  router.use(text({ defaultCharset: "utf8" }));
+  router.use(logRequest());
+  router.use((req, res, next) => {
+    next(new ApiErr("API not found", { statusCode: status.NotFound }));
+  });
+  router.use(catchUnexpectedErr);
+  router.use(logApiErr());
+  router.use(sendErrResponse);
+  router.use(logResponse());
+  return router;
 }

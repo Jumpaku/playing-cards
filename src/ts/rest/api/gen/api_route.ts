@@ -1,4 +1,4 @@
-import { Application } from "express";
+import { Router } from "express";
 import { route } from "../../route";
 import {
   handler as example_get,
@@ -11,41 +11,44 @@ import {
 import {
   handler as example_example_id_get,
   Req as example_example_id_get_Req,
-} from "../route/example/:example_id/get";
+} from "../route/example/[example_id]/get";
 import {
   handler as example_example_id_put,
   Req as example_example_id_put_Req,
-} from "../route/example/:example_id/put";
+} from "../route/example/[example_id]/put";
 import {
   handler as example_example_id_delete,
   Req as example_example_id_delete_Req,
-} from "../route/example/:example_id/delete";
-import validateJsonBody from "../../middleware/validate_request";
+} from "../route/example/[example_id]/delete";
+import { AppContext } from "../../../app/context";
 
-export function api_route(app: Application): Application {
-  app.use("/example", validateJsonBody("get", example_get_Req));
-  route(app, "get", "/example", example_get);
-  app.use("/example", validateJsonBody("post", example_post_Req));
-  route(app, "post", "/example", example_post);
-  app.use(
+export function api_route(ctx: AppContext, router: Router): Router {
+  route(ctx, router, "get", "/example", example_get_Req, example_get);
+  route(ctx, router, "post", "/example", example_post_Req, example_post);
+  route(
+    ctx,
+    router,
+    "get",
     "/example/:example_id",
-    validateJsonBody("get", example_example_id_get_Req)
-  );
-  route(app, "get", "/example/:example_id", example_example_id_get);
-  app.use(
-    "/example/:example_id",
-    validateJsonBody("put", example_example_id_put_Req)
-  );
-  route(app, "put", "/example/:example_id", example_example_id_put);
-  app.use(
-    "/example/:example_id",
-    validateJsonBody("delete", example_example_id_delete_Req)
+    example_example_id_get_Req,
+    example_example_id_get
   );
   route(
-    app,
+    ctx,
+    router,
+    "put",
+    "/example/:example_id",
+    example_example_id_put_Req,
+    example_example_id_put
+  );
+  route(
+    ctx,
+    router,
     "delete",
-    "/example/:example_id/delete",
+    "/example/:example_id",
+    example_example_id_delete_Req,
     example_example_id_delete
   );
-  return app;
+
+  return router;
 }

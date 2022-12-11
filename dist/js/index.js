@@ -1,6 +1,7 @@
 import { newEnv } from "./app/env";
 import { panic, InitErr } from "./lib/errors";
 import { CryptoIdGen } from "./lib/id_gen";
+import { api_route } from "./rest/api/gen/api_route";
 import { server } from "./rest/server";
 function main() {
     console.log("hello");
@@ -13,6 +14,8 @@ function main() {
         env,
         idGen: new CryptoIdGen(),
     };
-    server(ctx, () => { });
+    server(ctx, (app) => {
+        api_route(ctx, app);
+    });
 }
 main();

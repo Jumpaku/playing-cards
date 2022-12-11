@@ -5,6 +5,6 @@ export type ApiErrInfo = {
 };
 export class ApiErr extends Err<ApiErrInfo> {
   constructor(message: string, info: ApiErrInfo, cause?: Err) {
-    super("AppErr", message, info, cause);
+    super("ApiErr", message, info, cause);
   }
 }
