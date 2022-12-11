@@ -21,26 +21,25 @@ export type Req = TypeOf<typeof Req>;
 export const Res = typing.type({});
 export type Res = TypeOf<typeof Res>;
 
-export const handler: Handler<Req, Res> = async (
-  ctx: CallContext,
-  req: Req
-): Promise<Result<Res, ApiErr>> => {
-  const oldExample = examples.get(req.example_id);
-  if (oldExample == null) {
-    return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
-  }
-  const newExample: Example = { ...oldExample };
-  if (req.value == null) {
+export default class implements Handler<Req, Res> {
+  readonly requestType: typing.Type<Req> = Req;
+  async handle(ctx: CallContext, req: Req): Promise<Result<Res, ApiErr>> {
+    const oldExample = examples.get(req.example_id);
+    if (oldExample == null) {
+      return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+    }
+    const newExample: Example = { ...oldExample };
+    if (req.value == null) {
+      return [{}, null];
+    }
+    if (req.value.str != null) {
+      newExample.value_str = req.value.str;
+    }
+    if (req.value.num != null) {
+      newExample.value_num = req.value.num;
+    }
+    newExample.updateTime = ctx.timestamp;
+    examples.set(req.example_id, newExample);
     return [{}, null];
   }
-  if (req.value.str != null) {
-    newExample.value_str = req.value.str;
-  }
-  if (req.value.num != null) {
-    newExample.value_num = req.value.num;
-  }
-  newExample.updateTime = ctx.timestamp;
-  examples.set(req.example_id, newExample);
-  return [{}, null];
-};
-export default handler;
+}

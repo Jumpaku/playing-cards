@@ -14,15 +14,14 @@ export type Req = TypeOf<typeof Req>;
 export const Res = typing.type({});
 export type Res = TypeOf<typeof Res>;
 
-export const handler: Handler<Req, Res> = async (
-  ctx: CallContext,
-  req: Req
-): Promise<Result<Res, ApiErr>> => {
-  const oldExample = examples.get(req.example_id);
-  if (oldExample == null) {
-    return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+export default class implements Handler<Req, Res> {
+  readonly requestType: typing.Type<Req> = Req;
+  async handle(ctx: CallContext, req: Req): Promise<Result<Res, ApiErr>> {
+    const oldExample = examples.get(req.example_id);
+    if (oldExample == null) {
+      return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+    }
+    examples.delete(req.example_id);
+    return [{}, null];
   }
-  examples.delete(req.example_id);
-  return [{}, null];
-};
-export default handler;
+}

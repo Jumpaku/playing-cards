@@ -22,25 +22,24 @@ export const Res = typing.type({
 });
 export type Res = TypeOf<typeof Res>;
 
-export const handler: Handler<Req, Res> = async (
-  ctx: CallContext,
-  req: Req
-): Promise<Result<Res, ApiErr>> => {
-  const e = examples.get(req.example_id);
-  if (e == null) {
-    return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
-  }
-  return [
-    {
-      example_id: req.example_id,
-      value: {
-        str: e.value_str,
-        num: e.value_num,
+export default class implements Handler<Req, Res> {
+  readonly requestType: typing.Type<Req> = Req;
+  async handle(ctx: CallContext, req: Req): Promise<Result<Res, ApiErr>> {
+    const e = examples.get(req.example_id);
+    if (e == null) {
+      return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
+    }
+    return [
+      {
+        example_id: req.example_id,
+        value: {
+          str: e.value_str,
+          num: e.value_num,
+        },
+        create_time: e.createTime.toISOString(),
+        update_time: e.updateTime.toISOString(),
       },
-      create_time: e.createTime.toISOString(),
-      update_time: e.updateTime.toISOString(),
-    },
-    null,
-  ];
-};
-export default handler;
+      null,
+    ];
+  }
+}

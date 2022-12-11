@@ -16,17 +16,21 @@ import parseRawBody from "./middleware/parse_raw_body";
 import { newErrorLogInfo } from "../lib/log/log_info";
 import parseJsonBody from "./middleware/parse_json_body";
 
+/*
 export type Handler<Req, Res> = (
   ctx: CallContext,
   req: Req
 ) => Promise<Result<Res, ApiErr>>;
-
+*/
+export interface Handler<Req, Res> {
+  readonly requestType: typing.Type<Req>;
+  handle(ctx: CallContext, req: Req): Promise<Result<Res, ApiErr>>;
+}
 export function route<Req, Res>(
   ctx: AppContext,
   router: Router,
   method: typeof methods[number],
   path: string,
-  reqType: typing.Type<Req>,
   handler: Handler<Req, Res>
 ) {
   const wrappedHandler = async (
@@ -37,7 +41,7 @@ export function route<Req, Res>(
     const callCtx = req.ctx;
     requireNonNull(callCtx);
     // Validate request args
-    const [args, typeErr] = validateType(reqType, {
+    const [args, typeErr] = validateType(handler.requestType, {
       ...req.body,
       ...req.query,
       ...req.params,
@@ -49,7 +53,7 @@ export function route<Req, Res>(
     }
     try {
       // Invoke handler with args
-      const [result, apiErr] = await handler(callCtx, args);
+      const [result, apiErr] = await handler.handle(callCtx, args);
       if (apiErr != null) {
         return next(apiErr);
       }

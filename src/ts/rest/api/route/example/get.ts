@@ -23,20 +23,19 @@ export const Res = typing.type({
 });
 export type Res = TypeOf<typeof Res>;
 
-export const handler: Handler<Req, Res> = async (
-  ctx: CallContext,
-  req: Req
-): Promise<Result<Res, ApiErr>> => {
-  return [
-    {
-      list: [...examples.entries()].map(([k, v]) => ({
-        example_id: k,
-        value: { str: v.value_str, num: v.value_num },
-        create_time: v.createTime.toISOString(),
-        update_time: v.updateTime.toISOString(),
-      })),
-    },
-    null,
-  ];
-};
-export default handler;
+export default class implements Handler<Req, Res> {
+  readonly requestType: typing.Type<Req> = Req;
+  async handle(ctx: CallContext, req: Req): Promise<Result<Res, ApiErr>> {
+    return [
+      {
+        list: [...examples.entries()].map(([k, v]) => ({
+          example_id: k,
+          value: { str: v.value_str, num: v.value_num },
+          create_time: v.createTime.toISOString(),
+          update_time: v.updateTime.toISOString(),
+        })),
+      },
+      null,
+    ];
+  }
+}
