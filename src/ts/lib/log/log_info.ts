@@ -2,7 +2,7 @@ import { wrapErr } from "../errors";
 
 export type LogInfo = {
   name: string;
-  timestamp: Date;
+  logTime: Date;
 };
 
 export type ErrLogInfo = LogInfo & {
@@ -16,7 +16,7 @@ export function newErrorLogInfo(err: unknown): ErrLogInfo {
   const wrapped = wrapErr(err);
   return {
     name: "error_log",
-    timestamp: new Date(),
+    logTime: new Date(),
     err_name: wrapped.name,
     err_messages: wrapped.chainMessage(),
     err_stack: wrapped.stack ?? "",

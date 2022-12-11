@@ -22,7 +22,7 @@ export default function logRequest(ctx: AppContext) {
     requireNonNull(callCtx);
     const reqInfo: RequestInfo = {
       name: "request_log",
-      timestamp: new Date(),
+      logTime: new Date(),
       callId: callCtx.callId,
       method: req.method.toLowerCase() as Method,
       url: req.url,

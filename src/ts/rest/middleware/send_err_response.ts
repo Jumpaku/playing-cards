@@ -9,12 +9,7 @@ export default function sendErrResponse(
   next: NextFunction
 ) {
   const apiErr = wrapApiErr(err);
-  const info = apiErr.getInfo();
-  res.body = {
-    name: apiErr.name,
-    message: apiErr.message,
-    info: info,
-  };
-  res.status(info.statusCode).json(res.body);
+  res.body = apiErr.asResponse();
+  res.status(apiErr.getInfo().statusCode).json(res.body);
   next();
 }

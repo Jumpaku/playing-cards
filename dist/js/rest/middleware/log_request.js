@@ -5,7 +5,7 @@ export default function logRequest(ctx) {
         requireNonNull(callCtx);
         const reqInfo = {
             name: "request_log",
-            timestamp: new Date(),
+            logTime: new Date(),
             callId: callCtx.callId,
             method: req.method.toLowerCase(),
             url: req.url,

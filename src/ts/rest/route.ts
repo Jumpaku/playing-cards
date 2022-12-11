@@ -15,6 +15,7 @@ import { AppContext } from "../app/context";
 import parseRawBody from "./middleware/parse_raw_body";
 import { newErrorLogInfo } from "../lib/log/log_info";
 import parseJsonBody from "./middleware/parse_json_body";
+import { newApiCallInfo } from "./api_log";
 
 export type Handler<Req, Res> = (
   ctx: CallContext,
@@ -49,14 +50,16 @@ export function route<Req, Res>(
     }
     try {
       // Invoke handler with args
-      const [result, apiErr] = await handler(callCtx, args);
+      const result = await handler(callCtx, args);
+      ctx.log.info(newApiCallInfo(callCtx, args, result));
+      const [resBody, apiErr] = result;
       if (apiErr != null) {
         return next(apiErr);
       }
-      res.body = result;
+      res.body = resBody;
     } catch (err) {
       // Handle error when await failed
-      callCtx.app.log.error(newErrorLogInfo(err));
+      ctx.log.error(newErrorLogInfo(err));
       return next(wrapApiErr(err));
     }
     next();

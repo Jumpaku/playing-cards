@@ -45,7 +45,7 @@
             case "number":
                 return value.toString(10);
             case "string":
-                return `"${value}"`;
+                return `"${value.replaceAll(`"`, '\\"')}"`;
             case "undefined":
                 return `"<undefined>"`;
             case "function":
@@ -252,6 +252,13 @@
         constructor(message, info, cause) {
             super("ApiErr", message, info, cause);
         }
+        asResponse() {
+            return {
+                name: this.name,
+                message: this.message,
+                info: this.getInfo(),
+            };
+        }
     }
     function wrapApiErr(err) {
         return err instanceof ApiErr
@@ -265,7 +272,7 @@
             requireNonNull(callCtx);
             const reqInfo = {
                 name: "request_log",
-                timestamp: new Date(),
+                logTime: new Date(),
                 callId: callCtx.callId,
                 method: req.method.toLowerCase(),
                 url: req.url,
@@ -286,7 +293,7 @@
             const apiErr = wrapApiErr(err);
             const errInfo = {
                 name: "api_err_log",
-                timestamp: new Date(),
+                logTime: new Date(),
                 callId: callCtx.callId,
                 info: apiErr.getInfo(),
                 message: apiErr.chainMessage(),
@@ -298,13 +305,8 @@
 
     function sendErrResponse(err, req, res, next) {
         const apiErr = wrapApiErr(err);
-        const info = apiErr.getInfo();
-        res.body = {
-            name: apiErr.name,
-            message: apiErr.message,
-            info: info,
-        };
-        res.status(info.statusCode).json(res.body);
+        res.body = apiErr.asResponse();
+        res.status(apiErr.getInfo().statusCode).json(res.body);
         next();
     }
 
@@ -314,7 +316,7 @@
             requireNonNull(callCtx);
             const resInfo = {
                 name: "response_log",
-                timestamp: new Date(),
+                logTime: new Date(),
                 callId: callCtx.callId,
                 status: res.statusCode,
                 headers: res.getHeaders(),
@@ -345,7 +347,7 @@
         const wrapped = wrapErr(err);
         return {
             name: "error_log",
-            timestamp: new Date(),
+            logTime: new Date(),
             err_name: wrapped.name,
             err_messages: wrapped.chainMessage(),
             err_stack: wrapped.stack ?? "",
@@ -363,6 +365,17 @@
         }
     }
 
+    function newApiCallInfo(ctx, req, [res, err]) {
+        const info = {
+            name: "api_call_log",
+            logTime: new Date(),
+            callId: ctx.callId,
+            callTime: ctx.timestamp,
+            request: req,
+        };
+        return Object.assign(info, err != null ? { errorResponse: err.asResponse() } : { response: res });
+    }
+
     function route(ctx, router, method, path, reqType, handler) {
         const wrappedHandler = async (req, res, next) => {
             const callCtx = req.ctx;
@@ -378,15 +391,17 @@
             }
             try {
                 // Invoke handler with args
-                const [result, apiErr] = await handler(callCtx, args);
+                const result = await handler(callCtx, args);
+                ctx.log.info(newApiCallInfo(callCtx, args, result));
+                const [resBody, apiErr] = result;
                 if (apiErr != null) {
                     return next(apiErr);
                 }
-                res.body = result;
+                res.body = resBody;
             }
             catch (err) {
                 // Handle error when await failed
-                callCtx.app.log.error(newErrorLogInfo(err));
+                ctx.log.error(newErrorLogInfo(err));
                 return next(wrapApiErr(err));
             }
             next();

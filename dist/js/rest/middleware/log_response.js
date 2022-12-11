@@ -5,7 +5,7 @@ export default function logResponse(ctx) {
         requireNonNull(callCtx);
         const resInfo = {
             name: "response_log",
-            timestamp: new Date(),
+            logTime: new Date(),
             callId: callCtx.callId,
             status: res.statusCode,
             headers: res.getHeaders(),

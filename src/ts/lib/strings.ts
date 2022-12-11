@@ -14,7 +14,7 @@ export function stringify(
     case "number":
       return value.toString(10);
     case "string":
-      return `"${value}"`;
+      return `"${value.replaceAll(`"`, '\\"')}"`;
     case "undefined":
       return `"<undefined>"`;
     case "function":
