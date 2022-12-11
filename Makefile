@@ -1,28 +1,29 @@
 .DEFAULT_GOAL := help
 
+.PHONY: init
+init: ## install dependencies
+	npm install
+
 .PHONY: build
 build: ## build all scripts
-	make clean && make build_js
+	@echo 'Clean js files:'
+	make clean
 
-.PHONY: build
-clean:
-	rm -rf ./dist/*
-
-.PHONY: build_js
-build_js:
-	make build_ts_lint && make build_js_compile && make build_js_bundle
-
-.PHONY: build_ts_lint
-build_ts_lint:
+	@echo 'Lint ts files:'
 	eslint --fix src/ts/**/*.ts
 
-.PHONY: build_js_compile
-build_js_compile:
+	@echo 'Format ts files:'
+	prettier --write src/ts/**/*.ts
+
+	@echo 'Compile to js files:'
 	tsc
 
-.PHONY: build_js_bundle
-build_js_bundle:
+	@echo 'Bundle js files:'
 	rollup --sourcemap --format umd --file dist/index.bundle.js dist/js/index.js
+
+.PHONY: clean
+clean: ## clean built files
+	rm -rf ./dist/*
 
 .PHONY: start
 start: ## run server
@@ -31,6 +32,23 @@ start: ## run server
 .PHONY: test
 test: ## run test
 	echo 'test not implemented'
+
+.PHONY: check
+check: ## check lint, compile, and test
+	@echo 'Filename:'
+	./scripts/check_ts_file_case.sh
+
+	@echo 'Lint:'
+	eslint src/ts/**/*.ts
+	
+	@echo 'Format:'
+	prettier --check src/ts/*.ts
+	
+	@echo 'Compile:'
+	tsc --noEmit
+	
+	@echo 'Test:'
+	make test
 
 .PHONY: help
 help: ## show this help

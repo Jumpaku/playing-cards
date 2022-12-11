@@ -1,0 +1,42 @@
+name: check code
+on:
+  push:
+    branches: [master, develop, release/*]
+  pull_request:
+    branches: [master, develop, release/*]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Define environmental variables
+        run: cp .env.default .env
+
+      - name: Cache docker image
+        id: cache-docker
+        uses: actions/cache@v3
+        with: # docker cache image is stored in `gha-image-cache` on Ubuntu
+          path: gha-image-cache
+          key: ${{ runner.os }}-${{ hashFiles('Dockerfile') }}
+      - if: ${{ steps.cache-docker.outputs.cache-hit != 'true' }}
+        name: Build and save docker image
+        run: docker build --tag gha-image . && docker save --output gha-image-cache gha-image
+
+      - name: Cache node modules
+        id: cache-npm
+        uses: actions/cache@v3
+        with: # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+      - if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+        name: Install npm package
+        run: make init
+
+      - name: Install dependencies and check lint, compile, and test
+        run: docker load --input gha-image-cache && docker run --volume $(pwd):/app gha-image sh -c 'make check'
