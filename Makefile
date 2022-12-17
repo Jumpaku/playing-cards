@@ -31,24 +31,21 @@ start: ## run server
 
 .PHONY: test
 test: ## run test
-	echo 'test not implemented'
+	jest
 
 .PHONY: check
 check: ## check lint, compile, and test
 	@echo 'Filename:'
 	./scripts/check_ts_file_case.sh
 
-	@echo 'Lint:'
+	@echo 'Lint Error:'
 	eslint src/ts/**/*.ts
 	
-	@echo 'Format:'
+	@echo 'Format Error:'
 	prettier --check src/ts/*.ts
 	
-	@echo 'Compile:'
+	@echo 'Compile Error:'
 	tsc --noEmit
-	
-	@echo 'Test:'
-	make test
 
 .PHONY: help
 help: ## show this help
