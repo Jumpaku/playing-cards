@@ -1,23 +1,35 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('crypto'), require('dotenv'), require('io-ts'), require('process'), require('express'), require('fs/promises')) :
-    typeof define === 'function' && define.amd ? define(['crypto', 'dotenv', 'io-ts', 'process', 'express', 'fs/promises'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.crypto, global.dotenv, global.typing, global.process, global.express, global.fp));
-})(this, (function (crypto, dotenv, typing, process, express, fp) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('yargs'), require('crypto'), require('fs/promises'), require('process'), require('express'), require('io-ts'), require('dotenv')) :
+    typeof define === 'function' && define.amd ? define(['yargs', 'crypto', 'fs/promises', 'process', 'express', 'io-ts', 'dotenv'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.yargs, global.crypto, global.fp, global.process$1, global.express, global.typing, global.dotenv));
+})(this, (function (yargs, crypto, fp, process$1, express, typing, dotenv) { 'use strict';
 
-    class IncrementIdGen {
-        current;
-        constructor(current) {
-            this.current = current;
-        }
-        value() {
-            return `id-${this.current}`;
-        }
-        next() {
-            const v = this.value();
-            this.current++;
-            return v;
-        }
+    async function parseArgs(args) {
+        return yargs
+            .scriptName("jumpaku/playing-cards")
+            .command("serve [options]", "Start server", (yargs) => yargs.options({
+            env: {
+                type: "string",
+                default: ".env",
+                describe: "Path of dotenv file",
+                requiresArg: true,
+            },
+            config: {
+                type: "string",
+                default: "config.yml",
+                describe: "Path of configuration yml file",
+                requiresArg: true,
+            },
+        }))
+            .command("show <content> <target_command> [options]", "Show variables", (yargs) => yargs
+            .positional("content", {
+            choices: ["env", "config", "args"],
+        })
+            .positional("target_command", { choices: ["serve"] }))
+            .version(false)
+            .parse(args);
     }
+
     class CryptoIdGen {
         current;
         constructor(current = crypto.randomUUID()) {
@@ -78,6 +90,28 @@
         return str;
     }
 
+    const defaultConsole = console;
+    class FileLogger {
+        logDir;
+        console;
+        constructor(logDir = "log", console = defaultConsole) {
+            this.logDir = logDir;
+            this.console = console;
+        }
+        info(logInfo) {
+            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
+            this.console.log(stringify(logInfo));
+        }
+        warn(logInfo) {
+            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
+            this.console.warn(stringify(logInfo));
+        }
+        error(logInfo) {
+            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
+            this.console.error(stringify(logInfo));
+        }
+    }
+
     class Err extends Error {
         info;
         constructor(name, message, info, cause) {
@@ -133,12 +167,6 @@
         }
     }
 
-    class InitErr extends Err {
-        constructor(message, cause) {
-            super("InitErr", message, {}, cause);
-        }
-    }
-
     function instanceOfErr(obj) {
         return obj instanceof Err;
     }
@@ -147,7 +175,7 @@
             panic(wrapErr(cause));
         }
         console.error(new PanicErr("Panic!", cause));
-        process.exit(1);
+        process$1.exit(1);
     }
     function wrapErr(err) {
         if (instanceOfErr(err)) {
@@ -162,41 +190,6 @@
         if (value == null) {
             panic(message ?? `nonnull value is required`);
         }
-    }
-
-    class TypeErr extends Err {
-        constructor(message, cause) {
-            super("TypeErr", message, {}, cause);
-        }
-    }
-    function validateType(type, obj) {
-        const r = type.decode(obj);
-        if (r._tag === "Left")
-            return [
-                null,
-                new TypeErr("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
-            ];
-        return [r.right, null];
-    }
-
-    const Env = typing.type({
-        APP_STAGE: typing.string,
-        APP_PORT: typing.string,
-        LOG_PATH: typing.string,
-    });
-    function newEnv(path) {
-        const env = dotenv.config({ path });
-        if (env.error != null) {
-            return [
-                null,
-                new IoErr("fail to load environment variables", wrapErr(env.error)),
-            ];
-        }
-        const [val, err] = validateType(Env, env.parsed);
-        if (err != null) {
-            return [null, new IoErr(`invalid environment variables`, err)];
-        }
-        return [val, null];
     }
 
     const status = {
@@ -330,6 +323,21 @@
 
     function endCall(req, res, next) {
         res.end();
+    }
+
+    class TypeErr extends Err {
+        constructor(message, cause) {
+            super("TypeErr", message, {}, cause);
+        }
+    }
+    function validateType(type, obj) {
+        const r = type.decode(obj);
+        if (r._tag === "Left")
+            return [
+                null,
+                new TypeErr("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
+            ];
+        return [r.right, null];
     }
 
     function sendResponse(req, res, next) {
@@ -591,53 +599,142 @@
         return router;
     }
 
-    const defaultConsole = console;
-    class FileLogger {
-        logDir;
-        console;
-        constructor(logDir = "log", console = defaultConsole) {
-            this.logDir = logDir;
-            this.console = console;
+    const Env = typing.type({
+        APP_STAGE: typing.string,
+        APP_PORT: typing.string,
+        LOG_PATH: typing.string,
+    });
+    function newEnv(path) {
+        const env = dotenv.config({ path });
+        if (env.error != null) {
+            return [
+                null,
+                new IoErr("fail to load environment variables", wrapErr(env.error)),
+            ];
         }
-        info(logInfo) {
-            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
-            this.console.log(stringify(logInfo));
+        const [val, err] = validateType(Env, env.parsed);
+        if (err != null) {
+            return [null, new IoErr(`invalid environment variables`, err)];
         }
-        warn(logInfo) {
-            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
-            this.console.warn(stringify(logInfo));
-        }
-        error(logInfo) {
-            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
-            this.console.error(stringify(logInfo));
+        return [val, null];
+    }
+
+    class InitErr extends Err {
+        constructor(message, cause) {
+            super("InitErr", message, {}, cause);
         }
     }
 
-    function main() {
-        console.log("hello");
-        const [env, err] = newEnv(".env");
+    function serve(args, envFile, configFile) {
+        const [env, err] = newEnv(envFile);
         if (err != null) {
-            panic(new InitErr("fail loading env", err));
+            return [null, new InitErr("failed loading env file", err)];
         }
-        console.log(env);
         const ctx = {
             env,
             idGen: new CryptoIdGen(),
             log: new FileLogger(env.LOG_PATH, console),
         };
-        showIds();
-        server(ctx, (app) => {
-            api_route(ctx, app);
-        });
+        server(ctx, (app) => api_route(ctx, app));
+        return [undefined, null];
     }
-    function showIds() {
-        const idGen0 = new CryptoIdGen();
-        for (let i = 0; i < 10; i++) {
-            console.log(idGen0.next());
+
+    class BadArgsErr extends Err {
+        constructor(message, info, cause) {
+            super("BadArgsErr", message, info, cause);
         }
-        const idGen1 = new IncrementIdGen(1);
-        for (let i = 0; i < 10; i++) {
-            console.log(idGen1.next());
+    }
+
+    function show(args) {
+        switch (args.target_command) {
+            case "serve":
+                return showServe(args, args.content, args.env, args.config);
+            default:
+                return [
+                    null,
+                    new BadArgsErr("bad argument", {
+                        args: { target_command: args.target_command },
+                    }),
+                ];
+        }
+    }
+    function showServe(args, content, envFile, configFile) {
+        switch (content) {
+            case "env":
+                const [env, err] = newEnv(envFile);
+                if (err != null) {
+                    return [null, new IoErr("fail loading env", err)];
+                }
+                console.log(env);
+                return [undefined, null];
+            case "config":
+                console.log("Nothing to show");
+                return [undefined, null];
+            case "args":
+                console.log({
+                    target_command: "serve",
+                    env: envFile,
+                    config: configFile,
+                });
+                return [undefined, null];
+            default:
+                return [
+                    null,
+                    new BadArgsErr(`content must be one of "env", "config", or "args"`, {
+                        args: content,
+                    }),
+                ];
+        }
+    }
+
+    class CliErr extends Err {
+        constructor(message, info, cause) {
+            super("CliErr", message, info, cause);
+        }
+    }
+
+    function handleErr(args, command, err) {
+        return err != null
+            ? [
+                null,
+                new CliErr(`${command} failed`, {
+                    args: args,
+                    command: `${command}`,
+                    exitCode: 1,
+                }, err),
+            ]
+            : [undefined, null];
+    }
+    async function runApp(args) {
+        const parsed = await parseArgs(args);
+        const [command] = parsed._;
+        switch (command) {
+            case "serve": {
+                const [, err] = serve(parsed, parsed.env, parsed.config);
+                return handleErr(parsed, command, err);
+            }
+            case "show": {
+                const [, err] = show(parsed);
+                return handleErr(parsed, command, err);
+            }
+            default:
+                return [
+                    null,
+                    new CliErr("bad command", {
+                        args: parsed,
+                        command: `${command}`,
+                        exitCode: 1,
+                    }),
+                ];
+        }
+    }
+
+    async function main() {
+        const [, err] = await runApp(process.argv.slice(2));
+        if (err != null) {
+            console.error(err.chainMessage());
+            err.print();
+            process.exit(err.getInfo().exitCode);
         }
     }
     main();
