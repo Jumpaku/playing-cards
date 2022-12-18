@@ -7,16 +7,17 @@ import { ApiErr } from "./api_err";
 import { status } from "./utils";
 import logRequest from "./middleware/log_request";
 import parseRawBody from "./middleware/parse_raw_body";
-export function server(ctx, routing) {
+export function server(ctx, routing, callback) {
     const router = express.Router();
     router.use(prepareCallContext(ctx));
     routing(router);
     routeDefault(ctx, router);
     const app = express();
     app.use(router);
-    app.listen(ctx.env.APP_PORT, () => {
+    const s = app.listen(ctx.env.APP_PORT, () => {
         console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
     });
+    callback(s);
 }
 function routeDefault(ctx, router) {
     const throwApiNotFound = (req, res, next) => {
