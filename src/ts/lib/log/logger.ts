@@ -13,7 +13,7 @@ export interface Logger<I extends LogInfo = LogInfo> {
   warn(logInfo: I): void;
   /**
    * Logs information of error that must be fixed immediately or is unrecoverable
-   * @param logInfo
+   * @param ErrLogInfo
    */
   error(logInfo: ErrLogInfo): void;
 }
