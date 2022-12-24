@@ -1,13 +1,10 @@
 import { NextFunction, Router } from "express";
 import typing from "io-ts";
-import { Result } from "../lib/errors";
-import { ApiErr } from "./api_err";
+import { requireNonNull, Result } from "../lib/errors";
+import { ApiErr, wrapApiErr } from "./api_err";
 import { CallContext } from "./call_context";
 import { methods, Request, Response, status } from "./utils";
-import { json } from "body-parser";
-import catchParseJsonErr from "./middleware/catch_parse_json_err";
 import logRequest from "./middleware/log_request";
-import catchUnexpectedErr from "./middleware/catch_unexpected_err";
 import logApiErr from "./middleware/log_api_err";
 import sendErrResponse from "./middleware/send_err_response";
 import logResponse from "./middleware/log_response";
@@ -15,6 +12,11 @@ import endCall from "./middleware/end_call";
 import { validateType } from "../lib/typing";
 import sendResponse from "./middleware/send_response";
 import { AppContext } from "../app/context";
+import parseRawBody from "./middleware/parse_raw_body";
+import { newErrLogInfo } from "../lib/log/log_info";
+import parseJsonBody from "./middleware/parse_json_body";
+import { newApiCallInfo } from "./api_log";
+
 export type Handler<Req, Res> = (
   ctx: CallContext,
   req: Req
@@ -22,7 +24,7 @@ export type Handler<Req, Res> = (
 
 export function route<Req, Res>(
   ctx: AppContext,
-  app: Router,
+  router: Router,
   method: typeof methods[number],
   path: string,
   reqType: typing.Type<Req>,
@@ -33,36 +35,48 @@ export function route<Req, Res>(
     res: Response<Res>,
     next: NextFunction
   ) => {
-    return (async () => {
-      const args = { ...req.body, ...req.query, ...req.params };
-      const [_, typeErr] = validateType(reqType, args);
-      if (typeErr != null) {
-        return next(
-          new ApiErr("Bad request", { statusCode: status.BadRequest }, typeErr)
-        );
-      }
-      const [result, apiErr] = await handler(req.ctx!, args);
+    const callCtx = req.ctx;
+    requireNonNull(callCtx);
+    // Validate request args
+    const [args, typeErr] = validateType(reqType, {
+      ...req.body,
+      ...req.query,
+      ...req.params,
+    });
+    if (typeErr != null) {
+      return next(
+        new ApiErr("Bad request", { statusCode: status.BadRequest }, typeErr)
+      );
+    }
+    try {
+      // Invoke handler with args
+      const result = await handler(callCtx, args);
+      ctx.log.info(newApiCallInfo(callCtx, args, result));
+      const [resBody, apiErr] = result;
       if (apiErr != null) {
         return next(apiErr);
       }
-      res.body = result;
-      next();
-    })().catch(next);
+      res.body = resBody;
+    } catch (err) {
+      // Handle error when await failed
+      ctx.log.error(newErrLogInfo(err));
+      return next(wrapApiErr(err));
+    }
+    next();
   };
 
-  app[method](path, [
-    json({ strict: true, inflate: false }),
-    catchParseJsonErr,
-    logRequest(),
+  router[method](path, [
+    parseRawBody,
+    logRequest(ctx),
+    parseJsonBody,
 
     wrappedHandler,
     sendResponse,
 
-    catchUnexpectedErr,
-    logApiErr(),
+    logApiErr(ctx),
     sendErrResponse,
 
-    logResponse(),
+    logResponse(ctx),
     endCall,
   ]);
 }

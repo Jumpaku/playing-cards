@@ -1,8 +1,9 @@
+import { CryptoIdGen, IncrementIdGen } from "./lib/id_gen";
 import { newEnv } from "./app/env";
 import { panic, InitErr } from "./lib/errors";
-import { CryptoIdGen } from "./lib/id_gen";
 import { api_route } from "./rest/api/gen/api_route";
 import { server } from "./rest/server";
+import { ConsoleLogger } from "./lib/log/console_logger";
 function main() {
     console.log("hello");
     const [env, err] = newEnv(".env");
@@ -13,9 +14,21 @@ function main() {
     const ctx = {
         env,
         idGen: new CryptoIdGen(),
+        log: new ConsoleLogger(),
     };
+    showIds();
     server(ctx, (app) => {
         api_route(ctx, app);
     });
+}
+function showIds() {
+    const idGen0 = new CryptoIdGen();
+    for (let i = 0; i < 10; i++) {
+        console.log(idGen0.next());
+    }
+    const idGen1 = new IncrementIdGen(1);
+    for (let i = 0; i < 10; i++) {
+        console.log(idGen1.next());
+    }
 }
 main();

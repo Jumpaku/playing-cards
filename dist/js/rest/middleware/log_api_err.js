@@ -1,17 +1,18 @@
 import { requireNonNull } from "../../lib/errors";
-export default function logApiErr(cout = console.log.bind(console), cerr = console.error.bind(console)) {
+import { wrapApiErr } from "../api_err";
+export default function logApiErr(ctx) {
     return (err, req, res, next) => {
         const callCtx = req.ctx;
         requireNonNull(callCtx);
-        const resInfo = {
+        const apiErr = wrapApiErr(err);
+        const errInfo = {
             name: "api_err_log",
-            timestamp: new Date(Date.now()),
+            logTime: new Date(),
             callId: callCtx.callId,
-            info: err.getInfo(),
-            message: err.chainMessage(),
+            info: apiErr.getInfo(),
+            message: apiErr.chainMessage(),
         };
-        cout(JSON.stringify(resInfo));
-        err.print(cerr);
-        next(err);
+        ctx.log.info(errInfo);
+        next(apiErr);
     };
 }

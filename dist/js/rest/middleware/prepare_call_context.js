@@ -3,8 +3,8 @@ export default function prepareCallContext(app) {
         req.ctx = {
             app: app,
             callId: app.idGen.next(),
+            callTime: new Date(),
             token: "",
-            timestamp: new Date(Date.now()),
         };
         next();
     };

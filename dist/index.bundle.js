@@ -1,25 +1,81 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('dotenv'), require('io-ts'), require('process'), require('crypto'), require('body-parser'), require('express')) :
-    typeof define === 'function' && define.amd ? define(['dotenv', 'io-ts', 'process', 'crypto', 'body-parser', 'express'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.dotenv, global.typing, global.process, global.crypto, global.bodyParser, global.express));
-})(this, (function (dotenv, typing, process, crypto, bodyParser, express) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('crypto'), require('dotenv'), require('io-ts'), require('process'), require('express')) :
+    typeof define === 'function' && define.amd ? define(['crypto', 'dotenv', 'io-ts', 'process', 'express'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.crypto, global.dotenv, global.typing, global.process, global.express));
+})(this, (function (crypto, dotenv, typing, process, express) { 'use strict';
+
+    class IncrementIdGen {
+        current;
+        constructor(current) {
+            this.current = current;
+        }
+        value() {
+            return `id-${this.current}`;
+        }
+        next() {
+            const v = this.value();
+            this.current++;
+            return v;
+        }
+    }
+    class CryptoIdGen {
+        current;
+        constructor(current = crypto.randomUUID()) {
+            this.current = current;
+        }
+        value() {
+            return this.current;
+        }
+        next() {
+            const v = this.value();
+            this.current = crypto.randomUUID();
+            return v;
+        }
+    }
 
     function defaultString(obj) {
-        return obj === null
-            ? "null"
-            : typeof obj === "undefined"
-                ? "undefined"
-                : typeof obj === "string"
-                    ? obj
-                    : typeof obj === "number"
-                        ? `${obj}`
-                        : typeof obj === "bigint"
-                            ? `${obj}`
-                            : typeof obj === "boolean"
-                                ? `${obj ? "true" : "false"}`
-                                : typeof obj === "function"
-                                    ? `function ${obj.name === "" ? "<anonymous>" : obj.name}`
-                                    : `object ${obj.toString()}`;
+        return stringify(obj);
+    }
+    function stringify(value, visited = new Set()) {
+        switch (typeof value) {
+            case "bigint":
+                return `"${value.toString(10)}"`;
+            case "boolean":
+                return value ? "true" : "false";
+            case "number":
+                return value.toString(10);
+            case "string":
+                return `"${value.replaceAll(`"`, '\\"')}"`;
+            case "undefined":
+                return `"<undefined>"`;
+            case "function":
+                return `"<Function[${value.name}]>"`;
+            case "symbol":
+                return `"<Symbol[${value.description ?? ""}]>"`;
+        }
+        if (value == null)
+            return "null";
+        if (value instanceof String)
+            return stringify(value.valueOf());
+        if (value instanceof BigInt)
+            return stringify(value.valueOf());
+        if (value instanceof Number)
+            return stringify(value.valueOf());
+        if (value instanceof Boolean)
+            return stringify(value.valueOf());
+        if (value instanceof Date)
+            return stringify(value.toISOString());
+        if (visited.has(value)) {
+            return `"<Cyclic>"`;
+        }
+        visited.add(value);
+        const str = Array.isArray(value)
+            ? `[${value.map((v) => stringify(v, visited)).join(",")}]`
+            : `{${Object.entries(value)
+            .map(([k, v]) => `"${k}":${stringify(v, visited)}`)
+            .join(",")}}`;
+        visited.delete(value);
+        return str;
     }
 
     class Err extends Error {
@@ -142,27 +198,6 @@
         return [val, null];
     }
 
-    class CryptoIdGen {
-        current;
-        constructor(current = crypto.randomUUID()) {
-            this.current = current;
-        }
-        value() {
-            return this.current;
-        }
-        next() {
-            const v = this.value();
-            this.current = crypto.randomUUID();
-            return v;
-        }
-    }
-
-    class ApiErr extends Err {
-        constructor(message, info, cause) {
-            super("ApiErr", message, info, cause);
-        }
-    }
-
     const status = {
         // 1XX
         Continue: 100,
@@ -213,79 +248,81 @@
         NetworkAuthenticationRequired: 511,
     };
 
-    function catchParseJsonErr(err, req, res, next) {
-        next(new ApiErr("cannot parse json", { statusCode: status.BadRequest }, wrapErr(err)));
+    class ApiErr extends Err {
+        constructor(message, info, cause) {
+            super("ApiErr", message, info, cause);
+        }
+        asResponse() {
+            return {
+                name: this.name,
+                message: this.message,
+                info: this.getInfo(),
+            };
+        }
+    }
+    function wrapApiErr(err) {
+        return err instanceof ApiErr
+            ? err
+            : new ApiErr("Unexpected Error", { statusCode: status.InternalServerError }, wrapErr(err));
     }
 
-    function logRequest(cout = console.log.bind(console)) {
+    function logRequest(ctx) {
         return (req, res, next) => {
             const callCtx = req.ctx;
             requireNonNull(callCtx);
             const reqInfo = {
                 name: "request_log",
-                timestamp: new Date(Date.now()),
+                logTime: new Date(),
                 callId: callCtx.callId,
                 method: req.method.toLowerCase(),
                 url: req.url,
                 headers: req.headers,
-                body: req.body,
+                rawBody: req.rawBody,
                 params: req.params,
                 query: req.query,
             };
-            cout(JSON.stringify(reqInfo));
+            ctx.log.info(reqInfo);
             next();
         };
     }
 
-    function catchUnexpectedErr(err, req, res, next) {
-        const apiErr = err instanceof ApiErr
-            ? err
-            : new ApiErr("Unexpected Error", { statusCode: status.InternalServerError }, wrapErr(err));
-        next(apiErr);
-    }
-
-    function logApiErr(cout = console.log.bind(console), cerr = console.error.bind(console)) {
+    function logApiErr(ctx) {
         return (err, req, res, next) => {
             const callCtx = req.ctx;
             requireNonNull(callCtx);
-            const resInfo = {
+            const apiErr = wrapApiErr(err);
+            const errInfo = {
                 name: "api_err_log",
-                timestamp: new Date(Date.now()),
+                logTime: new Date(),
                 callId: callCtx.callId,
-                info: err.getInfo(),
-                message: err.chainMessage(),
+                info: apiErr.getInfo(),
+                message: apiErr.chainMessage(),
             };
-            cout(JSON.stringify(resInfo));
-            err.print(cerr);
-            next(err);
+            ctx.log.info(errInfo);
+            next(apiErr);
         };
     }
 
     function sendErrResponse(err, req, res, next) {
-        if (err instanceof ApiErr) {
-            const info = err.getInfo();
-            res.status(info.statusCode).json({
-                name: err.name,
-                message: err.message,
-                info: info,
-            });
-        }
+        const apiErr = wrapApiErr(err);
+        res.body = apiErr.asResponse();
+        res.status(apiErr.getInfo().statusCode).json(res.body);
         next();
     }
 
-    function logResponse(cout = console.log.bind(console)) {
+    function logResponse(ctx) {
         return (req, res, next) => {
             const callCtx = req.ctx;
             requireNonNull(callCtx);
             const resInfo = {
                 name: "response_log",
-                timestamp: new Date(Date.now()),
+                logTime: new Date(),
                 callId: callCtx.callId,
                 status: res.statusCode,
                 headers: res.getHeaders(),
                 body: res.body,
             };
-            cout(JSON.stringify(resInfo));
+            ctx.log.info(resInfo);
             next();
         };
     }
@@ -299,32 +336,85 @@
         next();
     }
 
-    function route(ctx, app, method, path, reqType, handler) {
+    const parseRawBody = express.raw({
+        type: "*/*",
+        verify: (req, res, buf) => {
+            req.rawBody = buf.toString();
+        },
+    });
+
+    function newErrorLogInfo(err) {
+        const wrapped = wrapErr(err);
+        return {
+            name: "error_log",
+            logTime: new Date(),
+            err_name: wrapped.name,
+            err_messages: wrapped.chainMessage(),
+            err_stack: wrapped.stack ?? "",
+        };
+    }
+
+    function parseJsonBody(req, res, next) {
+        try {
+            const raw = req.rawBody ?? "";
+            req.body = raw === "" ? {} : JSON.parse(raw);
+            next();
+        }
+        catch (err) {
+            next(new ApiErr("Cannot parse body as JSON", { statusCode: status.BadRequest }, wrapErr(err)));
+        }
+    }
+
+    function newApiCallInfo(ctx, req, [res, err]) {
+        const info = {
+            name: "api_call_log",
+            logTime: new Date(),
+            callId: ctx.callId,
+            callTime: ctx.callTime,
+            request: req,
+        };
+        return Object.assign(info, err != null ? { errorResponse: err.asResponse() } : { response: res });
+    }
+
+    function route(ctx, router, method, path, reqType, handler) {
         const wrappedHandler = async (req, res, next) => {
-            return (async () => {
-                const args = { ...req.body, ...req.query, ...req.params };
-                const [_, typeErr] = validateType(reqType, args);
-                if (typeErr != null) {
-                    return next(new ApiErr("Bad request", { statusCode: status.BadRequest }, typeErr));
-                }
-                const [result, apiErr] = await handler(req.ctx, args);
+            const callCtx = req.ctx;
+            requireNonNull(callCtx);
+            // Validate request args
+            const [args, typeErr] = validateType(reqType, {
+                ...req.body,
+                ...req.query,
+                ...req.params,
+            });
+            if (typeErr != null) {
+                return next(new ApiErr("Bad request", { statusCode: status.BadRequest }, typeErr));
+            }
+            try {
+                // Invoke handler with args
+                const result = await handler(callCtx, args);
+                ctx.log.info(newApiCallInfo(callCtx, args, result));
+                const [resBody, apiErr] = result;
                 if (apiErr != null) {
                     return next(apiErr);
                 }
-                res.body = result;
-                next();
-            })().catch(next);
+                res.body = resBody;
+            }
+            catch (err) {
+                // Handle error when await failed
+                ctx.log.error(newErrorLogInfo(err));
+                return next(wrapApiErr(err));
+            }
+            next();
         };
-        app[method](path, [
-            bodyParser.json({ strict: true, inflate: false }),
-            catchParseJsonErr,
-            logRequest(),
+        router[method](path, [
+            parseRawBody,
+            logRequest(ctx),
+            parseJsonBody,
             wrappedHandler,
             sendResponse,
-            catchUnexpectedErr,
-            logApiErr(),
+            logApiErr(ctx),
             sendErrResponse,
-            logResponse(),
+            logResponse(ctx),
             endCall,
         ]);
     }
@@ -370,8 +460,8 @@
         const example = {
             value_str: req.value.str,
             value_num: req.value.num,
-            createTime: ctx.timestamp,
-            updateTime: ctx.timestamp,
+            createTime: ctx.callTime,
+            updateTime: ctx.callTime,
         };
         const exampleId = ctx.app.idGen.next();
         examples.set(exampleId, example);
@@ -435,7 +525,7 @@
         if (req.value.num != null) {
             newExample.value_num = req.value.num;
         }
-        newExample.updateTime = ctx.timestamp;
+        newExample.updateTime = ctx.callTime;
         examples.set(req.example_id, newExample);
         return [{}, null];
     };
@@ -467,8 +557,8 @@
             req.ctx = {
                 app: app,
                 callId: app.idGen.next(),
+                callTime: new Date(),
                 token: "",
-                timestamp: new Date(Date.now()),
             };
             next();
         };
@@ -478,24 +568,43 @@
         const router = express.Router();
         router.use(prepareCallContext(ctx));
         routing(router);
-        routeDefault(router);
+        routeDefault(ctx, router);
         const app = express();
         app.use(router);
         app.listen(ctx.env.APP_PORT, () => {
             console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
         });
     }
-    function routeDefault(router) {
-        router.use(bodyParser.text({ defaultCharset: "utf8" }));
-        router.use(logRequest());
-        router.use((req, res, next) => {
+    function routeDefault(ctx, router) {
+        const throwApiNotFound = (req, res, next) => {
             next(new ApiErr("API not found", { statusCode: status.NotFound }));
-        });
-        router.use(catchUnexpectedErr);
-        router.use(logApiErr());
-        router.use(sendErrResponse);
-        router.use(logResponse());
+        };
+        router.use([
+            parseRawBody,
+            logRequest(ctx),
+            throwApiNotFound,
+            logApiErr(ctx),
+            sendErrResponse,
+            logResponse(ctx),
+        ]);
         return router;
+    }
+
+    const defaultConsole = console;
+    class ConsoleLogger {
+        console;
+        constructor(console = defaultConsole) {
+            this.console = console;
+        }
+        info(logInfo) {
+            this.console.log(stringify(logInfo));
+        }
+        warn(logInfo) {
+            this.console.warn(stringify(logInfo));
+        }
+        error(logInfo) {
+            this.console.error(stringify(logInfo));
+        }
     }
 
     function main() {
@@ -508,10 +617,22 @@
         const ctx = {
             env,
             idGen: new CryptoIdGen(),
+            log: new ConsoleLogger(),
         };
+        showIds();
         server(ctx, (app) => {
             api_route(ctx, app);
         });
+    }
+    function showIds() {
+        const idGen0 = new CryptoIdGen();
+        for (let i = 0; i < 10; i++) {
+            console.log(idGen0.next());
+        }
+        const idGen1 = new IncrementIdGen(1);
+        for (let i = 0; i < 10; i++) {
+            console.log(idGen1.next());
+        }
     }
     main();
 

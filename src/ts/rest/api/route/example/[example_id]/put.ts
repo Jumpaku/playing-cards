@@ -39,7 +39,7 @@ export const handler: Handler<Req, Res> = async (
   if (req.value.num != null) {
     newExample.value_num = req.value.num;
   }
-  newExample.updateTime = ctx.timestamp;
+  newExample.updateTime = ctx.callTime;
   examples.set(req.example_id, newExample);
   return [{}, null];
 };

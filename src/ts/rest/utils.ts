@@ -13,6 +13,7 @@ export interface Request<
     Record<string, unknown>
   > {
   ctx?: CallContext;
+  rawBody?: string;
 }
 
 export interface Response<ResBody = Record<string, unknown>>
