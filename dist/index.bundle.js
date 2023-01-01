@@ -379,9 +379,9 @@
         return {
             name: "error_log",
             logTime: new Date(),
-            err_name: wrapped.name,
-            err_messages: wrapped.chainMessage(),
-            err_stack: wrapped.stack ?? "",
+            errName: wrapped.name,
+            errMessages: wrapped.chainMessage(),
+            errStack: wrapped.stack ?? "",
         };
     }
 

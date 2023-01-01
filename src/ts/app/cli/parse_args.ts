@@ -1,10 +1,14 @@
 import yargs from "yargs";
 
-type TypeWithGeneric<T> = Promise<T>;
-type ExtractGeneric<Type> = Type extends TypeWithGeneric<infer X> ? X : never;
-
-export type CliArgs = ExtractGeneric<ReturnType<typeof parseArgs>>;
-export async function parseArgs(args: string[]) {
+export type CliArgs = {
+  readonly env: string;
+  readonly config: string;
+  content: "env" | "config" | "args" | undefined;
+  target_command: "serve" | undefined;
+  _: (string | number)[];
+  $0: string;
+};
+export async function parseArgs(args: string[]): Promise<CliArgs> {
   return yargs
     .scriptName("jumpaku/playing-cards")
     .command("serve [options]", "Start server", (yargs) =>
