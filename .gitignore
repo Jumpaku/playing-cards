@@ -70,3 +70,6 @@ gha-image-cache
 
 # log file
 log/*.log
+
+# JavaScript file
+dist/js
