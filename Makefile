@@ -27,7 +27,7 @@ clean: ## clean built files
 
 .PHONY: start
 start: ## run server
-	node dist/index.bundle.js
+	node dist/index.bundle.js serve --env .env
 
 .PHONY: test
 test: ## run test

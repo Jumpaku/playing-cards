@@ -14,6 +14,13 @@ export default function serve(args, envFile, configFile) {
         idGen: new CryptoIdGen(),
         log: new FileLogger(env.LOG_PATH, console),
     };
-    server(ctx, (app) => api_route(ctx, app));
+    server(ctx, (app) => api_route(ctx, app), (server) => {
+        process.on("SIGTERM", () => {
+            console.log("SIGTERM signal received: closing HTTP server");
+            server.close(() => {
+                console.log("HTTP server closed");
+            });
+        });
+    });
     return [undefined, null];
 }

@@ -573,16 +573,17 @@
         };
     }
 
-    function server(ctx, routing) {
+    function server(ctx, routing, callback) {
         const router = express.Router();
         router.use(prepareCallContext(ctx));
         routing(router);
         routeDefault(ctx, router);
         const app = express();
         app.use(router);
-        app.listen(ctx.env.APP_PORT, () => {
+        const s = app.listen(ctx.env.APP_PORT, () => {
             console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
         });
+        callback(s);
     }
     function routeDefault(ctx, router) {
         const throwApiNotFound = (req, res, next) => {
@@ -635,7 +636,14 @@
             idGen: new CryptoIdGen(),
             log: new FileLogger(env.LOG_PATH, console),
         };
-        server(ctx, (app) => api_route(ctx, app));
+        server(ctx, (app) => api_route(ctx, app), (server) => {
+            process.on("SIGTERM", () => {
+                console.log("SIGTERM signal received: closing HTTP server");
+                server.close(() => {
+                    console.log("HTTP server closed");
+                });
+            });
+        });
         return [undefined, null];
     }
 

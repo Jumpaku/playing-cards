@@ -8,8 +8,13 @@ import { ApiErr } from "./api_err";
 import { Request, Response, status } from "./utils";
 import logRequest from "./middleware/log_request";
 import parseRawBody from "./middleware/parse_raw_body";
+import { Server } from "http";
 
-export function server(ctx: AppContext, routing: (router: Router) => void) {
+export function server(
+  ctx: AppContext,
+  routing: (router: Router) => void,
+  callback: (s: Server) => void
+) {
   const router = express.Router();
   router.use(prepareCallContext(ctx));
   routing(router);
@@ -17,9 +22,10 @@ export function server(ctx: AppContext, routing: (router: Router) => void) {
 
   const app = express();
   app.use(router);
-  app.listen(ctx.env.APP_PORT, () => {
+  const s = app.listen(ctx.env.APP_PORT, () => {
     console.log(`Example app listening on port ${ctx.env.APP_PORT}`);
   });
+  callback(s);
 }
 
 function routeDefault(ctx: AppContext, router: Router): Router {
