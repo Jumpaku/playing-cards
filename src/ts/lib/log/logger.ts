@@ -1,4 +1,5 @@
-import { ErrLogInfo, LogInfo } from "./log_info";
+import { ErrLogInfo } from "./err_log_info";
+import { LogInfo } from "./log_info";
 
 export interface Logger<I extends LogInfo = LogInfo> {
   /**
@@ -13,7 +14,7 @@ export interface Logger<I extends LogInfo = LogInfo> {
   warn(logInfo: I): void;
   /**
    * Logs information of error that must be fixed immediately or is unrecoverable
-   * @param ErrLogInfo
+   * @param logInfo
    */
   error(logInfo: ErrLogInfo): void;
 }

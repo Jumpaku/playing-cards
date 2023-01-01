@@ -9,9 +9,9 @@ import endCall from "./middleware/end_call";
 import { validateType } from "../lib/typing";
 import sendResponse from "./middleware/send_response";
 import parseRawBody from "./middleware/parse_raw_body";
-import { newErrorLogInfo } from "../lib/log/log_info";
 import parseJsonBody from "./middleware/parse_json_body";
 import { newApiCallInfo } from "./api_log";
+import { newErrLogInfo } from "../lib/log/err_log_info";
 export function route(ctx, router, method, path, reqType, handler) {
     const wrappedHandler = async (req, res, next) => {
         const callCtx = req.ctx;
@@ -37,7 +37,7 @@ export function route(ctx, router, method, path, reqType, handler) {
         }
         catch (err) {
             // Handle error when await failed
-            ctx.log.error(newErrorLogInfo(err));
+            ctx.log.error(newErrLogInfo(err));
             return next(wrapApiErr(err));
         }
         next();
