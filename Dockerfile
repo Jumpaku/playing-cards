@@ -10,5 +10,6 @@ RUN npm install -g \
     rollup \
     terser \
     eslint \
-    prettier eslint-config-prettier
+    prettier eslint-config-prettier \
+    jest
 WORKDIR /app

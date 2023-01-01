@@ -1,5 +1,5 @@
 {
-  "exclude": [],
+  "exclude": ["src/ts/__tests__/*"],
   "include": ["src/ts/**/*.ts"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
