@@ -28,7 +28,7 @@ export function server(
   callback(s);
 }
 
-function routeDefault(ctx: AppContext, router: Router): Router {
+function routeDefault(appCtx: AppContext, router: Router): Router {
   const throwApiNotFound = (
     req: Request,
     res: Response,
@@ -38,11 +38,11 @@ function routeDefault(ctx: AppContext, router: Router): Router {
   };
   router.use([
     parseRawBody,
-    logRequest(ctx),
+    logRequest(appCtx),
     throwApiNotFound,
-    logApiErr(ctx),
+    logApiErr(appCtx),
     sendErrResponse,
-    logResponse(ctx),
+    logResponse(appCtx),
   ]);
   return router;
 }

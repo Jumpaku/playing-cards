@@ -1,7 +1,7 @@
 import yargs from "yargs";
 
 export type CliArgs = {
-  readonly env: string;
+  readonly dotenv: string | undefined;
   readonly config: string;
   content: "env" | "config" | "args" | undefined;
   target_command: "serve" | undefined;
@@ -9,15 +9,14 @@ export type CliArgs = {
   $0: string;
 };
 export async function parseArgs(args: string[]): Promise<CliArgs> {
-  return yargs
+  const parsed = yargs
     .scriptName("jumpaku/playing-cards")
     .command("serve [options]", "Start server", (yargs) =>
       yargs.options({
-        env: {
+        dotenv: {
           type: "string",
-          default: ".env",
           describe: "Path of dotenv file",
-          requiresArg: true,
+          requiresArg: false,
         },
         config: {
           type: "string",
@@ -39,4 +38,5 @@ export async function parseArgs(args: string[]): Promise<CliArgs> {
     )
     .version(false)
     .parse(args);
+  return parsed;
 }

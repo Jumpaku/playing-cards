@@ -30,7 +30,7 @@ export async function runApp(args: string[]): Promise<Result<void, CliErr>> {
   const [command] = parsed._;
   switch (command) {
     case "serve": {
-      const [, err] = serve(parsed, parsed.env, parsed.config);
+      const [, err] = serve(parsed, parsed.config, parsed.dotenv);
       return handleErr(parsed, command, err);
     }
     case "show": {

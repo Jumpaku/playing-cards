@@ -12,9 +12,9 @@ export type ResponseInfo = LogInfo & {
   headers: OutgoingHttpHeaders;
   body: unknown;
 };
-export default function logResponse(ctx: AppContext) {
+export default function logResponse(appCtx: AppContext) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const callCtx = req.ctx;
+    const callCtx = req.callCtx;
     requireNonNull(callCtx);
     const resInfo: ResponseInfo = {
       name: "response_log",
@@ -24,7 +24,7 @@ export default function logResponse(ctx: AppContext) {
       headers: res.getHeaders(),
       body: res.body,
     };
-    ctx.log.info(resInfo);
+    appCtx.log.info(resInfo);
     next();
   };
 }

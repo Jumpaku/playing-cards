@@ -16,9 +16,9 @@ export type RequestInfo = LogInfo & {
   query: unknown;
 };
 
-export default function logRequest(ctx: AppContext) {
+export default function logRequest(appCtx: AppContext) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const callCtx = req.ctx;
+    const callCtx = req.callCtx;
     requireNonNull(callCtx);
     const reqInfo: RequestInfo = {
       name: "request_log",
@@ -31,7 +31,7 @@ export default function logRequest(ctx: AppContext) {
       params: req.params,
       query: req.query,
     };
-    ctx.log.info(reqInfo);
+    appCtx.log.info(reqInfo);
     next();
   };
 }

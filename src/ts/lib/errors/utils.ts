@@ -27,7 +27,7 @@ export function wrapErr(err: unknown): Err {
   }
   return new UnknownErr(new Error(`${defaultString(err)}`, { cause: err }));
 }
-export function requireNonNull(
+export function assertNonNull(
   value: unknown,
   message?: string
 ): asserts value is NonNullable<unknown> {
