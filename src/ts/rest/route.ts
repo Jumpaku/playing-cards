@@ -1,6 +1,6 @@
 import { NextFunction, Router } from "express";
 import typing from "io-ts";
-import { requireNonNull, Result } from "../lib/errors";
+import { assertNonNull, Result } from "../lib/errors";
 import { ApiErr, wrapApiErr } from "./api_err";
 import { CallContext } from "./call_context";
 import { methods, Request, Response, status } from "./utils";
@@ -37,7 +37,7 @@ export function route<Req, Res>(
     next: NextFunction
   ) => {
     const callCtx = req.callCtx;
-    requireNonNull(callCtx);
+    assertNonNull(callCtx);
     // Validate request args
     const [args, typeErr] = validateType(reqType, {
       ...req.body,
