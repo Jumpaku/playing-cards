@@ -4,6 +4,18 @@
 init: ## install dependencies
 	npm install
 
+.PHONY: debug
+debug: ## debug app without check
+	@echo 'Transpile to js files without check:'
+	@cd src/ts/
+	npx swc . -d ../../dist/js
+
+	@echo 'Bundle js files:'
+	rollup --sourcemap --format umd --file dist/index.bundle.js dist/js/index.js
+
+	@echo 'Start app:'
+	node dist/index.bundle.js serve --env .env
+
 .PHONY: build
 build: ## build all scripts
 	@echo 'Clean js files:'
@@ -16,7 +28,7 @@ build: ## build all scripts
 	prettier --write src/ts/**/*.ts
 
 	@echo 'Compile to js files:'
-	tsc
+	tsc --project tsconfig.prod.json
 
 	@echo 'Bundle js files:'
 	rollup --sourcemap --format umd --file dist/index.bundle.js dist/js/index.js
