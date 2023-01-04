@@ -1,7 +1,7 @@
 import { NextFunction } from "express";
 import { IncomingHttpHeaders } from "http";
 import { AppContext } from "../../app/context";
-import { requireNonNull } from "../../lib/errors";
+import { assertNonNull } from "../../lib/errors";
 import { LogInfo } from "../../lib/log/log_info";
 import { Method, Request, Response } from "../utils";
 
@@ -16,10 +16,10 @@ export type RequestInfo = LogInfo & {
   query: unknown;
 };
 
-export default function logRequest(ctx: AppContext) {
+export default function logRequest(appCtx: AppContext) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const callCtx = req.ctx;
-    requireNonNull(callCtx);
+    const callCtx = req.callCtx;
+    assertNonNull(callCtx);
     const reqInfo: RequestInfo = {
       name: "request_log",
       logTime: new Date(),
@@ -31,7 +31,7 @@ export default function logRequest(ctx: AppContext) {
       params: req.params,
       query: req.query,
     };
-    ctx.log.info(reqInfo);
+    appCtx.log.info(reqInfo);
     next();
   };
 }

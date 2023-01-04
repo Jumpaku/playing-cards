@@ -1,6 +1,6 @@
 import { NextFunction, Router } from "express";
 import typing from "io-ts";
-import { requireNonNull, Result } from "../lib/errors";
+import { assertNonNull, Result } from "../lib/errors";
 import { ApiErr, wrapApiErr } from "./api_err";
 import { CallContext } from "./call_context";
 import { methods, Request, Response, status } from "./utils";
@@ -18,12 +18,13 @@ import { newApiCallInfo } from "./api_log";
 import { newErrLogInfo } from "../lib/log/err_log_info";
 
 export type Handler<Req, Res> = (
-  ctx: CallContext,
+  appCtx: AppContext,
+  callCtx: CallContext,
   req: Req
 ) => Promise<Result<Res, ApiErr>>;
 
 export function route<Req, Res>(
-  ctx: AppContext,
+  appCtx: AppContext,
   router: Router,
   method: typeof methods[number],
   path: string,
@@ -35,8 +36,8 @@ export function route<Req, Res>(
     res: Response<Res>,
     next: NextFunction
   ) => {
-    const callCtx = req.ctx;
-    requireNonNull(callCtx);
+    const callCtx = req.callCtx;
+    assertNonNull(callCtx);
     // Validate request args
     const [args, typeErr] = validateType(reqType, {
       ...req.body,
@@ -50,8 +51,8 @@ export function route<Req, Res>(
     }
     try {
       // Invoke handler with args
-      const result = await handler(callCtx, args);
-      ctx.log.info(newApiCallInfo(callCtx, args, result));
+      const result = await handler(appCtx, callCtx, args);
+      appCtx.log.info(newApiCallInfo(callCtx, args, result));
       const [resBody, apiErr] = result;
       if (apiErr != null) {
         return next(apiErr);
@@ -59,7 +60,7 @@ export function route<Req, Res>(
       res.body = resBody;
     } catch (err) {
       // Handle error when await failed
-      ctx.log.error(newErrLogInfo(err));
+      appCtx.log.error(newErrLogInfo(err));
       return next(wrapApiErr(err));
     }
     next();
@@ -67,16 +68,16 @@ export function route<Req, Res>(
 
   router[method](path, [
     parseRawBody,
-    logRequest(ctx),
+    logRequest(appCtx),
     parseJsonBody,
 
     wrappedHandler,
     sendResponse,
 
-    logApiErr(ctx),
+    logApiErr(appCtx),
     sendErrResponse,
 
-    logResponse(ctx),
+    logResponse(appCtx),
     endCall,
   ]);
 }

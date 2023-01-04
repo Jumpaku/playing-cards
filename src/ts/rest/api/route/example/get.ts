@@ -4,6 +4,7 @@ import { CallContext } from "../../../call_context";
 import { Result } from "../../../../lib/errors";
 import { ApiErr } from "../../../api_err";
 import { examples } from "../../../../model/example";
+import { AppContext } from "../../../../app/context";
 
 export const Req = typing.type({});
 export type Req = TypeOf<typeof Req>;
@@ -24,7 +25,8 @@ export const Res = typing.type({
 export type Res = TypeOf<typeof Res>;
 
 export const handler: Handler<Req, Res> = async (
-  ctx: CallContext,
+  appCtx: AppContext,
+  callCtx: CallContext,
   req: Req
 ): Promise<Result<Res, ApiErr>> => {
   return [

@@ -1,18 +1,17 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('yargs'), require('crypto'), require('fs/promises'), require('process'), require('express'), require('io-ts'), require('dotenv')) :
-    typeof define === 'function' && define.amd ? define(['yargs', 'crypto', 'fs/promises', 'process', 'express', 'io-ts', 'dotenv'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.yargs, global.crypto, global.fp, global.process$1, global.express, global.typing, global.dotenv));
-})(this, (function (yargs, crypto, fp, process$1, express, typing, dotenv) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('yargs'), require('dotenv'), require('process'), require('crypto'), require('fs/promises'), require('express'), require('io-ts')) :
+    typeof define === 'function' && define.amd ? define(['yargs', 'dotenv', 'process', 'crypto', 'fs/promises', 'express', 'io-ts'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.yargs, global.dotenv, global.process$1, global.crypto, global.fp, global.express, global.typing));
+})(this, (function (yargs, dotenv, process$1, crypto, fp, express, typing) { 'use strict';
 
     async function parseArgs(args) {
-        return yargs
+        const parsed = yargs
             .scriptName("jumpaku/playing-cards")
             .command("serve [options]", "Start server", (yargs) => yargs.options({
-            env: {
+            dotenv: {
                 type: "string",
-                default: ".env",
                 describe: "Path of dotenv file",
-                requiresArg: true,
+                requiresArg: false,
             },
             config: {
                 type: "string",
@@ -28,21 +27,7 @@
             .positional("target_command", { choices: ["serve"] }))
             .version(false)
             .parse(args);
-    }
-
-    class CryptoIdGen {
-        current;
-        constructor(current = crypto.randomUUID()) {
-            this.current = current;
-        }
-        value() {
-            return this.current;
-        }
-        next() {
-            const v = this.value();
-            this.current = crypto.randomUUID();
-            return v;
-        }
+        return parsed;
     }
 
     function defaultString(obj) {
@@ -88,28 +73,6 @@
             .join(",")}}`;
         visited.delete(value);
         return str;
-    }
-
-    const defaultConsole = console;
-    class FileLogger {
-        logDir;
-        console;
-        constructor(logDir = "log", console = defaultConsole) {
-            this.logDir = logDir;
-            this.console = console;
-        }
-        info(logInfo) {
-            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
-            this.console.log(stringify(logInfo));
-        }
-        warn(logInfo) {
-            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
-            this.console.warn(stringify(logInfo));
-        }
-        error(logInfo) {
-            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
-            this.console.error(stringify(logInfo));
-        }
     }
 
     class Err extends Error {
@@ -186,9 +149,73 @@
         }
         return new UnknownErr(new Error(`${defaultString(err)}`, { cause: err }));
     }
-    function requireNonNull(value, message) {
+    function assertNonNull(value, message) {
         if (value == null) {
             panic(message ?? `nonnull value is required`);
+        }
+    }
+
+    class TypeErr extends Err {
+        constructor(message, cause) {
+            super("TypeErr", message, {}, cause);
+        }
+    }
+    function validateType(type, obj) {
+        const r = type.decode(obj);
+        if (r._tag === "Left")
+            return [
+                null,
+                new TypeErr("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
+            ];
+        return [r.right, null];
+    }
+
+    function loadDotenv(envType, dotenvPath) {
+        const loaded = dotenv.config(dotenvPath == null ? undefined : { path: dotenvPath });
+        if (loaded.error != null) {
+            return [
+                null,
+                new IoErr("fail to load environment variables", wrapErr(loaded.error)),
+            ];
+        }
+        const [val, err] = validateType(envType, loaded.parsed);
+        if (err != null) {
+            return [null, new IoErr(`invalid environment variables`, err)];
+        }
+        return [val, null];
+    }
+
+    class CryptoIdGen {
+        current;
+        constructor(current = crypto.randomUUID()) {
+            this.current = current;
+        }
+        next() {
+            const v = this.current;
+            this.current = crypto.randomUUID();
+            return v;
+        }
+    }
+
+    const defaultConsole = console;
+    class FileLogger {
+        logDir;
+        console;
+        constructor(logDir = "log", console = defaultConsole) {
+            this.logDir = logDir;
+            this.console = console;
+        }
+        info(logInfo) {
+            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
+            this.console.log(stringify(logInfo));
+        }
+        warn(logInfo) {
+            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
+            this.console.warn(stringify(logInfo));
+        }
+        error(logInfo) {
+            fp.appendFile(`${this.logDir}/${logInfo.name}.log`, `${stringify(logInfo)}\n`);
+            this.console.error(stringify(logInfo));
         }
     }
 
@@ -260,10 +287,10 @@
             : new ApiErr("Unexpected Error", { statusCode: status.InternalServerError }, wrapErr(err));
     }
 
-    function logRequest(ctx) {
+    function logRequest(appCtx) {
         return (req, res, next) => {
-            const callCtx = req.ctx;
-            requireNonNull(callCtx);
+            const callCtx = req.callCtx;
+            assertNonNull(callCtx);
             const reqInfo = {
                 name: "request_log",
                 logTime: new Date(),
@@ -275,15 +302,15 @@
                 params: req.params,
                 query: req.query,
             };
-            ctx.log.info(reqInfo);
+            appCtx.log.info(reqInfo);
             next();
         };
     }
 
-    function logApiErr(ctx) {
+    function logApiErr(appCtx) {
         return (err, req, res, next) => {
-            const callCtx = req.ctx;
-            requireNonNull(callCtx);
+            const callCtx = req.callCtx;
+            assertNonNull(callCtx);
             const apiErr = wrapApiErr(err);
             const errInfo = {
                 name: "api_err_log",
@@ -292,7 +319,7 @@
                 info: apiErr.getInfo(),
                 message: apiErr.chainMessage(),
             };
-            ctx.log.info(errInfo);
+            appCtx.log.info(errInfo);
             next(apiErr);
         };
     }
@@ -304,10 +331,10 @@
         next();
     }
 
-    function logResponse(ctx) {
+    function logResponse(appCtx) {
         return (req, res, next) => {
-            const callCtx = req.ctx;
-            requireNonNull(callCtx);
+            const callCtx = req.callCtx;
+            assertNonNull(callCtx);
             const resInfo = {
                 name: "response_log",
                 logTime: new Date(),
@@ -316,28 +343,13 @@
                 headers: res.getHeaders(),
                 body: res.body,
             };
-            ctx.log.info(resInfo);
+            appCtx.log.info(resInfo);
             next();
         };
     }
 
     function endCall(req, res, next) {
         res.end();
-    }
-
-    class TypeErr extends Err {
-        constructor(message, cause) {
-            super("TypeErr", message, {}, cause);
-        }
-    }
-    function validateType(type, obj) {
-        const r = type.decode(obj);
-        if (r._tag === "Left")
-            return [
-                null,
-                new TypeErr("invalid type", wrapErr(`[${r.left.map((e) => e.value).join(",")}]`)),
-            ];
-        return [r.right, null];
     }
 
     function sendResponse(req, res, next) {
@@ -385,10 +397,10 @@
         };
     }
 
-    function route(ctx, router, method, path, reqType, handler) {
+    function route(appCtx, router, method, path, reqType, handler) {
         const wrappedHandler = async (req, res, next) => {
-            const callCtx = req.ctx;
-            requireNonNull(callCtx);
+            const callCtx = req.callCtx;
+            assertNonNull(callCtx);
             // Validate request args
             const [args, typeErr] = validateType(reqType, {
                 ...req.body,
@@ -400,8 +412,8 @@
             }
             try {
                 // Invoke handler with args
-                const result = await handler(callCtx, args);
-                ctx.log.info(newApiCallInfo(callCtx, args, result));
+                const result = await handler(appCtx, callCtx, args);
+                appCtx.log.info(newApiCallInfo(callCtx, args, result));
                 const [resBody, apiErr] = result;
                 if (apiErr != null) {
                     return next(apiErr);
@@ -410,20 +422,20 @@
             }
             catch (err) {
                 // Handle error when await failed
-                ctx.log.error(newErrLogInfo(err));
+                appCtx.log.error(newErrLogInfo(err));
                 return next(wrapApiErr(err));
             }
             next();
         };
         router[method](path, [
             parseRawBody,
-            logRequest(ctx),
+            logRequest(appCtx),
             parseJsonBody,
             wrappedHandler,
             sendResponse,
-            logApiErr(ctx),
+            logApiErr(appCtx),
             sendErrResponse,
-            logResponse(ctx),
+            logResponse(appCtx),
             endCall,
         ]);
     }
@@ -442,7 +454,7 @@
             update_time: typing.string,
         })),
     });
-    const handler$4 = async (ctx, req) => {
+    const handler$4 = async (appCtx, callCtx, req) => {
         return [
             {
                 list: [...examples.entries()].map(([k, v]) => ({
@@ -465,14 +477,14 @@
     typing.type({
         example_id: typing.string,
     });
-    const handler$3 = async (ctx, req) => {
+    const handler$3 = async (appCtx, callCtx, req) => {
         const example = {
             value_str: req.value.str,
             value_num: req.value.num,
-            createTime: ctx.callTime,
-            updateTime: ctx.callTime,
+            createTime: callCtx.callTime,
+            updateTime: callCtx.callTime,
         };
-        const exampleId = ctx.app.idGen.next();
+        const exampleId = appCtx.idGen.next();
         examples.set(exampleId, example);
         return [{ example_id: exampleId }, null];
     };
@@ -489,7 +501,7 @@
         create_time: typing.string,
         update_time: typing.string,
     });
-    const handler$2 = async (ctx, req) => {
+    const handler$2 = async (appCtx, callCtx, req) => {
         const e = examples.get(req.example_id);
         if (e == null) {
             return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
@@ -519,7 +531,7 @@
         ]),
     });
     typing.type({});
-    const handler$1 = async (ctx, req) => {
+    const handler$1 = async (appCtx, callCtx, req) => {
         const oldExample = examples.get(req.example_id);
         if (oldExample == null) {
             return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
@@ -534,7 +546,7 @@
         if (req.value.num != null) {
             newExample.value_num = req.value.num;
         }
-        newExample.updateTime = ctx.callTime;
+        newExample.updateTime = callCtx.callTime;
         examples.set(req.example_id, newExample);
         return [{}, null];
     };
@@ -543,7 +555,7 @@
         example_id: typing.string,
     });
     typing.type({});
-    const handler = async (ctx, req) => {
+    const handler = async (appCtx, callCtx, req) => {
         const oldExample = examples.get(req.example_id);
         if (oldExample == null) {
             return [null, new ApiErr(`Not found`, { statusCode: status.NotFound })];
@@ -561,11 +573,10 @@
         return router;
     }
 
-    function prepareCallContext(app) {
+    function prepareCallContext(appCtx) {
         return (req, res, next) => {
-            req.ctx = {
-                app: app,
-                callId: app.idGen.next(),
+            req.callCtx = {
+                callId: appCtx.idGen.next(),
                 callTime: new Date(),
                 token: "",
             };
@@ -585,17 +596,17 @@
         });
         callback(s);
     }
-    function routeDefault(ctx, router) {
+    function routeDefault(appCtx, router) {
         const throwApiNotFound = (req, res, next) => {
             next(new ApiErr("API not found", { statusCode: status.NotFound }));
         };
         router.use([
             parseRawBody,
-            logRequest(ctx),
+            logRequest(appCtx),
             throwApiNotFound,
-            logApiErr(ctx),
+            logApiErr(appCtx),
             sendErrResponse,
-            logResponse(ctx),
+            logResponse(appCtx),
         ]);
         return router;
     }
@@ -605,20 +616,6 @@
         APP_PORT: typing.string,
         LOG_PATH: typing.string,
     });
-    function newEnv(path) {
-        const env = dotenv.config({ path });
-        if (env.error != null) {
-            return [
-                null,
-                new IoErr("fail to load environment variables", wrapErr(env.error)),
-            ];
-        }
-        const [val, err] = validateType(Env, env.parsed);
-        if (err != null) {
-            return [null, new IoErr(`invalid environment variables`, err)];
-        }
-        return [val, null];
-    }
 
     class InitErr extends Err {
         constructor(message, cause) {
@@ -626,8 +623,8 @@
         }
     }
 
-    function serve(args, envFile, configFile) {
-        const [env, err] = newEnv(envFile);
+    function serve(args, configFile, dotenvFile) {
+        const [env, err] = loadDotenv(Env, dotenvFile);
         if (err != null) {
             return [null, new InitErr("failed loading env file", err)];
         }
@@ -656,7 +653,7 @@
     function show(args) {
         switch (args.target_command) {
             case "serve":
-                return showServe(args, args.content, args.env, args.config);
+                return showServe(args, args.content, args.config, args.dotenv);
             default:
                 return [
                     null,
@@ -666,10 +663,10 @@
                 ];
         }
     }
-    function showServe(args, content, envFile, configFile) {
+    function showServe(args, content, configFile, dotenvFile) {
         switch (content) {
             case "env":
-                const [env, err] = newEnv(envFile);
+                const [env, err] = loadDotenv(Env, dotenvFile);
                 if (err != null) {
                     return [null, new IoErr("fail loading env", err)];
                 }
@@ -681,8 +678,8 @@
             case "args":
                 console.log({
                     target_command: "serve",
-                    env: envFile,
                     config: configFile,
+                    dotenv: dotenvFile,
                 });
                 return [undefined, null];
             default:
@@ -718,7 +715,7 @@
         const [command] = parsed._;
         switch (command) {
             case "serve": {
-                const [, err] = serve(parsed, parsed.env, parsed.config);
+                const [, err] = serve(parsed, parsed.config, parsed.dotenv);
                 return handleErr(parsed, command, err);
             }
             case "show": {

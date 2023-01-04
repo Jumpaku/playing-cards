@@ -12,7 +12,7 @@ export interface Request<
     qs.ParsedQs,
     Record<string, unknown>
   > {
-  ctx?: CallContext;
+  callCtx?: CallContext;
   rawBody?: string;
 }
 

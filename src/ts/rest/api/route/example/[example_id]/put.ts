@@ -5,6 +5,7 @@ import { Result } from "../../../../../lib/errors";
 import { ApiErr } from "../../../../api_err";
 import { Example, examples } from "../../../../../model/example";
 import { status } from "../../../../utils";
+import { AppContext } from "../../../../../app/context";
 
 export const Req = typing.type({
   example_id: typing.string,
@@ -22,7 +23,8 @@ export const Res = typing.type({});
 export type Res = TypeOf<typeof Res>;
 
 export const handler: Handler<Req, Res> = async (
-  ctx: CallContext,
+  appCtx: AppContext,
+  callCtx: CallContext,
   req: Req
 ): Promise<Result<Res, ApiErr>> => {
   const oldExample = examples.get(req.example_id);
@@ -39,7 +41,7 @@ export const handler: Handler<Req, Res> = async (
   if (req.value.num != null) {
     newExample.value_num = req.value.num;
   }
-  newExample.updateTime = ctx.callTime;
+  newExample.updateTime = callCtx.callTime;
   examples.set(req.example_id, newExample);
   return [{}, null];
 };

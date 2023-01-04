@@ -5,6 +5,7 @@ import { Result } from "../../../../../lib/errors";
 import { ApiErr } from "../../../../api_err";
 import { examples } from "../../../../../model/example";
 import { status } from "../../../../utils";
+import { AppContext } from "../../../../../app/context";
 
 export const Req = typing.type({
   example_id: typing.string,
@@ -23,7 +24,8 @@ export const Res = typing.type({
 export type Res = TypeOf<typeof Res>;
 
 export const handler: Handler<Req, Res> = async (
-  ctx: CallContext,
+  appCtx: AppContext,
+  callCtx: CallContext,
   req: Req
 ): Promise<Result<Res, ApiErr>> => {
   const e = examples.get(req.example_id);
