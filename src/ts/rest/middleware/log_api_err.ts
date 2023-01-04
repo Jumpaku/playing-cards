@@ -1,6 +1,6 @@
 import { NextFunction } from "express";
 import { AppContext } from "../../app/context";
-import { requireNonNull } from "../../lib/errors";
+import { assertNonNull } from "../../lib/errors";
 import { LogInfo } from "../../lib/log/log_info";
 import { wrapApiErr } from "../api_err";
 import { Request, Response } from "../utils";
@@ -14,7 +14,7 @@ export type ErrorInfo = LogInfo & {
 export default function logApiErr(appCtx: AppContext) {
   return (err: unknown, req: Request, res: Response, next: NextFunction) => {
     const callCtx = req.callCtx;
-    requireNonNull(callCtx);
+    assertNonNull(callCtx);
     const apiErr = wrapApiErr(err);
     const errInfo: ErrorInfo = {
       name: "api_err_log",
