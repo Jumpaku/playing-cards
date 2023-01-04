@@ -60,7 +60,7 @@ export function route<Req, Res>(
       res.body = resBody;
     } catch (err) {
       // Handle error when await failed
-      appCtx.log.error(newErrLogInfo(err));
+      appCtx.log.error(newErrLogInfo(appCtx.clock.now(), err));
       return next(wrapApiErr(err));
     }
     next();

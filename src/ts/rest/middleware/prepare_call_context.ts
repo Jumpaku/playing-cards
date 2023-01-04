@@ -6,7 +6,7 @@ export default function prepareCallContext(appCtx: AppContext) {
   return (req: Request, res: Response, next: NextFunction): void => {
     req.callCtx = {
       callId: appCtx.idGen.next(),
-      callTime: new Date(),
+      callTime: appCtx.clock.now(),
       token: "",
     };
     next();

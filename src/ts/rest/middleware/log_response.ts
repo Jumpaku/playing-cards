@@ -18,7 +18,7 @@ export default function logResponse(appCtx: AppContext) {
     requireNonNull(callCtx);
     const resInfo: ResponseInfo = {
       name: "response_log",
-      logTime: new Date(),
+      logTime: appCtx.clock.now(),
       callId: callCtx.callId,
       status: res.statusCode as Status[keyof Status],
       headers: res.getHeaders(),

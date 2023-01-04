@@ -18,7 +18,7 @@ export default function logApiErr(appCtx: AppContext) {
     const apiErr = wrapApiErr(err);
     const errInfo: ErrorInfo = {
       name: "api_err_log",
-      logTime: new Date(),
+      logTime: appCtx.clock.now(),
       callId: callCtx.callId,
       info: apiErr.getInfo(),
       message: apiErr.chainMessage(),

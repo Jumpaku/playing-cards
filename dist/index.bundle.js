@@ -30,6 +30,12 @@
         return parsed;
     }
 
+    class RealClock {
+        now() {
+            return new Date();
+        }
+    }
+
     function defaultString(obj) {
         return stringify(obj);
     }
@@ -314,7 +320,7 @@
             const apiErr = wrapApiErr(err);
             const errInfo = {
                 name: "api_err_log",
-                logTime: new Date(),
+                logTime: appCtx.clock.now(),
                 callId: callCtx.callId,
                 info: apiErr.getInfo(),
                 message: apiErr.chainMessage(),
@@ -337,7 +343,7 @@
             assertNonNull(callCtx);
             const resInfo = {
                 name: "response_log",
-                logTime: new Date(),
+                logTime: appCtx.clock.now(),
                 callId: callCtx.callId,
                 status: res.statusCode,
                 headers: res.getHeaders(),
@@ -386,11 +392,11 @@
         return Object.assign(info, err != null ? { errorResponse: err.asResponse() } : { response: res });
     }
 
-    function newErrLogInfo(err) {
+    function newErrLogInfo(logTime, err) {
         const wrapped = wrapErr(err);
         return {
             name: "error_log",
-            logTime: new Date(),
+            logTime: logTime,
             errName: wrapped.name,
             errMessages: wrapped.chainMessage(),
             errStack: wrapped.stack ?? "",
@@ -422,7 +428,7 @@
             }
             catch (err) {
                 // Handle error when await failed
-                appCtx.log.error(newErrLogInfo(err));
+                appCtx.log.error(newErrLogInfo(appCtx.clock.now(), err));
                 return next(wrapApiErr(err));
             }
             next();
@@ -577,7 +583,7 @@
         return (req, res, next) => {
             req.callCtx = {
                 callId: appCtx.idGen.next(),
-                callTime: new Date(),
+                callTime: appCtx.clock.now(),
                 token: "",
             };
             next();
@@ -631,6 +637,7 @@
         const ctx = {
             env,
             idGen: new CryptoIdGen(),
+            clock: new RealClock(),
             log: new FileLogger(env.LOG_PATH, console),
         };
         server(ctx, (app) => api_route(ctx, app), (server) => {
