@@ -13,14 +13,6 @@ export class DbErr extends Err<DbErrInfo> {
   }
 }
 
-export function wrapDbErr(
-  err: unknown,
-  query?: {
-    statement: string;
-    params: unknown[];
-  }
-): DbErr {
-  return err instanceof DbErr
-    ? err
-    : new DbErr("BD Error", { query }, wrapErr(err));
+export function wrapDbErr(err: unknown): DbErr {
+  return err instanceof DbErr ? err : new DbErr("BD Error", {}, wrapErr(err));
 }
