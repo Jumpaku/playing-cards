@@ -6,6 +6,6 @@ export default function sendResponse(
   res: Response,
   next: NextFunction
 ) {
-  res.status(status.Ok).json(res.body);
+  res.status(status.Ok).json(res.body ?? {});
   next();
 }

@@ -1,5 +1,5 @@
 import { NextFunction } from "express";
-import { ApiErr } from "../api_err";
+import { wrapApiErr } from "../api_err";
 import { Request, Response } from "../utils";
 
 export default function sendErrResponse(
@@ -8,13 +8,8 @@ export default function sendErrResponse(
   res: Response,
   next: NextFunction
 ) {
-  if (err instanceof ApiErr) {
-    const info = err.getInfo();
-    res.status(info.statusCode).json({
-      name: err.name,
-      message: err.message,
-      info: info,
-    });
-  }
+  const apiErr = wrapApiErr(err);
+  res.body = apiErr.asResponse();
+  res.status(apiErr.getInfo().statusCode).json(res.body);
   next();
 }

@@ -1,4 +1,4 @@
-import { RequestContext } from "./request_context";
+import { CallContext } from "./call_context";
 import { Request as ExpressRequest } from "express";
 import { Response as ExpressResponse } from "express";
 
@@ -12,15 +12,25 @@ export interface Request<
     qs.ParsedQs,
     Record<string, unknown>
   > {
-  ctx?: RequestContext;
+  callCtx?: CallContext;
+  rawBody?: string;
 }
 
 export interface Response<ResBody = Record<string, unknown>>
   extends ExpressResponse<ResBody, Record<string, unknown>> {
   body?: ResBody;
 }
-
-export const methods = [
+export type Method =
+  | "get"
+  | "head"
+  | "post"
+  | "put"
+  | "delete"
+  | "connect"
+  | "options"
+  | "trace"
+  | "patch";
+export const methods: readonly Method[] = [
   "get",
   "head",
   "post",

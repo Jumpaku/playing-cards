@@ -4,6 +4,18 @@
 init: ## install dependencies
 	npm install
 
+.PHONY: debug
+debug: ## debug app without check
+	@echo 'Transpile to js files without check:'
+	@cd src/ts/
+	npx swc . -d ../../dist/js
+
+	@echo 'Bundle js files:'
+	rollup --sourcemap --format umd --file dist/index.bundle.js dist/js/index.js
+
+	@echo 'Start app:'
+	node dist/index.bundle.js serve --env .env
+
 .PHONY: build
 build: ## build all scripts
 	@echo 'Clean js files:'
@@ -16,7 +28,7 @@ build: ## build all scripts
 	prettier --write src/ts/**/*.ts
 
 	@echo 'Compile to js files:'
-	tsc
+	tsc --project tsconfig.prod.json
 
 	@echo 'Bundle js files:'
 	rollup --sourcemap --format umd --file dist/index.bundle.js dist/js/index.js
@@ -27,28 +39,25 @@ clean: ## clean built files
 
 .PHONY: start
 start: ## run server
-	node dist/index.bundle.js
+	node dist/index.bundle.js serve --env .env
 
 .PHONY: test
 test: ## run test
-	echo 'test not implemented'
+	jest
 
 .PHONY: check
 check: ## check lint, compile, and test
 	@echo 'Filename:'
 	./scripts/check_ts_file_case.sh
 
-	@echo 'Lint:'
+	@echo 'Lint Error:'
 	eslint src/ts/**/*.ts
 	
-	@echo 'Format:'
+	@echo 'Format Error:'
 	prettier --check src/ts/*.ts
 	
-	@echo 'Compile:'
+	@echo 'Compile Error:'
 	tsc --noEmit
-	
-	@echo 'Test:'
-	make test
 
 .PHONY: help
 help: ## show this help
