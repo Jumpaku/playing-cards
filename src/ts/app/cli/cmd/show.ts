@@ -1,12 +1,13 @@
+import { loadDotenv } from "../../../lib/dotenv";
 import { Err, IoErr, Result } from "../../../lib/errors";
 import { BadArgsErr } from "../../../lib/errors/bad_args_err";
-import { newEnv } from "../../env";
+import { Env } from "../../env";
 import { CliArgs } from "../parse_args";
 
 export default function show(args: CliArgs): Result<void, Err> {
   switch (args.target_command) {
     case "serve":
-      return showServe(args, args.content!, args.env, args.config);
+      return showServe(args, args.content!, args.config, args.dotenv);
     default:
       return [
         null,
@@ -20,12 +21,12 @@ export default function show(args: CliArgs): Result<void, Err> {
 function showServe(
   args: CliArgs,
   content: "env" | "config" | "args",
-  envFile: string,
-  configFile: string
+  configFile: string,
+  dotenvFile: string | undefined
 ): Result<void, Err> {
   switch (content) {
     case "env":
-      const [env, err] = newEnv(envFile);
+      const [env, err] = loadDotenv(Env, dotenvFile);
       if (err != null) {
         return [null, new IoErr("fail loading env", err)];
       }
@@ -37,8 +38,8 @@ function showServe(
     case "args":
       console.log({
         target_command: "serve",
-        env: envFile,
         config: configFile,
+        dotenv: dotenvFile,
       });
       return [undefined, null];
     default:

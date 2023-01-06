@@ -1,7 +1,7 @@
 import { NextFunction } from "express";
 import { OutgoingHttpHeaders } from "http";
 import { AppContext } from "../../app/context";
-import { requireNonNull } from "../../lib/errors";
+import { assertNonNull } from "../../lib/errors";
 import { LogInfo } from "../../lib/log/log_info";
 import { Request, Response, Status } from "../utils";
 
@@ -12,10 +12,10 @@ export type ResponseInfo = LogInfo & {
   headers: OutgoingHttpHeaders;
   body: unknown;
 };
-export default function logResponse(ctx: AppContext) {
+export default function logResponse(appCtx: AppContext) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const callCtx = req.ctx;
-    requireNonNull(callCtx);
+    const callCtx = req.callCtx;
+    assertNonNull(callCtx);
     const resInfo: ResponseInfo = {
       name: "response_log",
       logTime: new Date(),
@@ -24,7 +24,7 @@ export default function logResponse(ctx: AppContext) {
       headers: res.getHeaders(),
       body: res.body,
     };
-    ctx.log.info(resInfo);
+    appCtx.log.info(resInfo);
     next();
   };
 }

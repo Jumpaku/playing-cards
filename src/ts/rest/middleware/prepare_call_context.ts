@@ -2,11 +2,10 @@ import { NextFunction } from "express";
 import { AppContext } from "../../app/context";
 import { Request, Response } from "../utils";
 
-export default function prepareCallContext(app: AppContext) {
+export default function prepareCallContext(appCtx: AppContext) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    req.ctx = {
-      app: app,
-      callId: app.idGen.next(),
+    req.callCtx = {
+      callId: appCtx.idGen.next(),
       callTime: new Date(),
       token: "",
     };
