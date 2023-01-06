@@ -8,11 +8,11 @@ export type ErrLogInfo = LogInfo & {
   errStack: string;
 };
 
-export function newErrLogInfo(err: unknown): ErrLogInfo {
+export function newErrLogInfo(logTime: Date, err: unknown): ErrLogInfo {
   const wrapped = wrapErr(err);
   return {
     name: "error_log",
-    logTime: new Date(),
+    logTime: logTime,
     errName: wrapped.name,
     errMessages: wrapped.chainMessage(),
     errStack: wrapped.stack ?? "",

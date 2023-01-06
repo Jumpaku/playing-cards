@@ -1,3 +1,4 @@
+import { RealClock } from "../../../lib/clock";
 import { loadDotenv } from "../../../lib/dotenv";
 import { Err, Result } from "../../../lib/errors";
 import { CryptoIdGen } from "../../../lib/id_gen";
@@ -21,6 +22,7 @@ export default function serve(
   const ctx: AppContext = {
     env,
     idGen: new CryptoIdGen(),
+    clock: new RealClock(),
     log: new FileLogger(env.LOG_PATH, console),
   };
   server(
